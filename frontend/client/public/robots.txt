@@ -1,5 +1,5 @@
 User-agent: *
 Allow: /
-Sitemap: https://www.smartfiles.app/sitemap.xml
+Sitemap: https://smart-file-eta.vercel.app//sitemap.xml
 
 

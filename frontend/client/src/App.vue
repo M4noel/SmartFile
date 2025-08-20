@@ -131,21 +131,60 @@
         </div>
       </div>
     </footer>
+
+    <!-- Sistema de Notificações -->
+    <NotificationToast ref="notificationToast" />
+    
     <Analytics />
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, provide } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
 import AdBanner from '@/components/AdBanner.vue';
 import { Analytics } from '@vercel/analytics/vue';
+import NotificationToast from '@/components/NotificationToast.vue';
 
 const mobileMenuOpen = ref(false);
+const notificationToast = ref(null);
+
+// Sistema global de notificações
+const showNotification = {
+  success: (title, message, duration) => {
+    if (notificationToast.value) {
+      notificationToast.value.success(title, message, duration);
+    }
+  },
+  error: (title, message, duration) => {
+    if (notificationToast.value) {
+      notificationToast.value.error(title, message, duration);
+    }
+  },
+  warning: (title, message, duration) => {
+    if (notificationToast.value) {
+      notificationToast.value.warning(title, message, duration);
+    }
+  },
+  info: (title, message, duration) => {
+    if (notificationToast.value) {
+      notificationToast.value.info(title, message, duration);
+    }
+  }
+};
+
+// Disponibilizar globalmente
+provide('showNotification', showNotification);
 
 const toggleMobileMenu = () => {
   mobileMenuOpen.value = !mobileMenuOpen.value;
 };
+
+// Expor para uso global
+onMounted(() => {
+  // Tornar disponível globalmente
+  window.showNotification = showNotification;
+});
 </script>
 
 <style scoped>

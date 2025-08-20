@@ -1,43 +1,56 @@
 import './assets/main.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import router from './components/router';
-import { createHead } from '@vueuse/head';
 import { createApp } from 'vue';
 import App from './App.vue';
 import axios from 'axios';
+import { createHead } from '@vueuse/head';
 
-// Interceptor global para mensagens de erro simples
+// Configure Axios base URL from environment variable
+axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+
+// Global Axios error interceptor
 axios.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const isNetworkError = !error.response;
-    const status = error.response?.status;
-    let simpleMessage = 'Não foi possível completar a ação. Tente novamente.';
-
-    if (isNetworkError) {
-      simpleMessage = 'Sem conexão. Verifique sua internet e tente novamente.';
-    } else if (status >= 500) {
-      simpleMessage = 'Erro interno. Tente novamente em instantes.';
-    } else if (status === 400 || status === 404 || status === 422) {
-      simpleMessage = 'Requisição inválida. Verifique os dados e tente novamente.';
-    } else if (status === 401 || status === 403) {
-      simpleMessage = 'Permissão negada. Faça login ou tente novamente.';
+  response => response,
+  error => {
+    let errorMessage = 'Ocorreu um erro inesperado. Por favor, tente novamente.';
+    let errorTitle = 'Erro';
+    
+    if (error.response) {
+      // O servidor respondeu com um status fora do range 2xx
+      if (error.response.data && error.response.data.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.response.status === 400) {
+        errorTitle = 'Dados Inválidos';
+        errorMessage = 'Verifique os dados enviados e tente novamente.';
+      } else if (error.response.status === 404) {
+        errorTitle = 'Não Encontrado';
+        errorMessage = 'O recurso solicitado não foi encontrado.';
+      } else if (error.response.status === 500) {
+        errorTitle = 'Erro do Servidor';
+        errorMessage = 'Erro interno do servidor. Tente novamente mais tarde.';
+      }
+    } else if (error.request) {
+      // A requisição foi feita, mas nenhuma resposta foi recebida
+      errorTitle = 'Sem Conexão';
+      errorMessage = 'Não foi possível conectar ao servidor. Verifique sua conexão.';
     }
 
-    // Padroniza mensagem simples no próprio error
-    error.message = simpleMessage;
-
-    // Se o componente tentar ler o corpo como Blob de texto, fornecemos um Blob simples
-    if (error.response && error.response.data instanceof Blob) {
-      error.response.data = new Blob([simpleMessage], { type: 'text/plain' });
+    // Mostrar notificação de erro
+    if (window.showNotification) {
+      window.showNotification.error(errorTitle, errorMessage, 8000);
     }
-
-    return Promise.reject(error);
+    
+    // Log para desenvolvedores
+    console.error('Erro na requisição:', errorTitle, errorMessage, error);
+    
+    return Promise.reject(new Error(errorMessage));
   }
 );
 
-const app = createApp(App);
 const head = createHead();
-app.use(head);
-app.use(router);
-app.mount('#app');
+
+createApp(App)
+  .use(router)
+  .use(head)
+  .mount('#app');

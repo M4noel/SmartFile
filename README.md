@@ -45,13 +45,44 @@ O frontend está configurado para deploy automático na Vercel.
 VITE_API_BASE_URL=https://seu-backend-url.com
 ```
 
-### Backend (Render/Railway/VPS)
-O backend precisa ser deployado separadamente devido à dependência do binário `qpdf`.
+### Backend (Vercel - Limitado)
+O backend pode ser deployado na Vercel com algumas limitações.
+
+**Configurações:**
+- Framework: Node.js + Express
+- Build Command: `npm install`
+- Root Directory: `server`
+- Runtime: `@vercel/node`
+
+**Limitações:**
+- ❌ Binários nativos (qpdf) não funcionam
+- ❌ Processamento de arquivos limitado
+- ❌ Tempo de execução máximo: 10s
+- ✅ APIs básicas funcionam
+- ✅ Email e funcionalidades simples
+
+### Backend (Render/Railway - Recomendado)
+Para funcionalidades completas, use Render ou Railway.
 
 **Opções de Deploy:**
 1. **Render**: Suporte a binários nativos
 2. **Railway**: Deploy simples e rápido
 3. **VPS**: Controle total sobre o ambiente
+
+## 🔄 Deploy Híbrido (Recomendado)
+
+### Estrutura Recomendada
+```
+Frontend: Vercel (SPA + Analytics)
+Backend: Render/Railway (API completa)
+```
+
+### Vantagens
+- ✅ Frontend otimizado na Vercel
+- ✅ Analytics integrado
+- ✅ Backend com todas as funcionalidades
+- ✅ Sem limitações de binários
+- ✅ Processamento completo de PDFs
 
 ## 📦 Instalação Local
 

@@ -46,7 +46,7 @@
         <div class="action-buttons">
           <button 
             class="primary-btn tooltip-trigger" 
-            @click="showComingSoonPopup('PDF Inteligente')"
+            @click="showPopup('PDF Inteligente')"
             @mouseenter="showTooltip($event, 'Em breve: PDF Inteligente')"
             @mouseleave="hideTooltip"
           >
@@ -91,7 +91,7 @@
         <div class="action-buttons">
           <button 
             class="primary-btn tooltip-trigger" 
-            @click="showComingSoonPopup('Texto Inteligente')"
+            @click="showPopup('Texto Inteligente')"
             @mouseenter="showTooltip($event, 'Em breve: Texto Inteligente')"
             @mouseleave="hideTooltip"
           >
@@ -102,7 +102,7 @@
     </div>
     
     <!-- Tooltip -->
-    <div v-if="tooltipVisible" class="tooltip" :style="tooltipStyle">
+    <div v-if="tooltipVisible" class="tooltip" :style="{ left: tooltipPosition.x + 'px', top: tooltipPosition.y + 'px' }">
       {{ tooltipText }}
     </div>
     
@@ -140,8 +140,6 @@
               {{ submitting ? 'Enviando...' : 'Notificar-me' }}
             </button>
           </div>
-          <div v-if="submitSuccessMessage" class="status-message success">{{ submitSuccessMessage }}</div>
-          <div v-if="submitErrorMessage" class="status-message error">{{ submitErrorMessage }}</div>
         </div>
       </div>
     </div>
@@ -151,73 +149,81 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import axios from 'axios';
+import { ref, inject } from 'vue';
 import AdBanner from '@/components/AdBanner.vue';
+import axios from 'axios';
+
+// Injetar sistema de notificações
+const showNotification = inject('showNotification');
 
 // Tooltip state
 const tooltipVisible = ref(false);
 const tooltipText = ref('');
-const tooltipStyle = ref({});
+const tooltipPosition = ref({ x: 0, y: 0 });
 
 // Popup state
 const popupVisible = ref(false);
 const popupTitle = ref('');
 const emailNotification = ref('');
 const submitting = ref(false);
-const submitSuccessMessage = ref('');
-const submitErrorMessage = ref('');
 
 const showTooltip = (event, text) => {
   tooltipText.value = text;
-  tooltipVisible.value = true;
-  
-  const rect = event.target.getBoundingClientRect();
-  tooltipStyle.value = {
-    left: rect.left + (rect.width / 2) + 'px',
-    top: rect.top - 10 + 'px',
-    transform: 'translateX(-50%) translateY(-100%)'
+  tooltipPosition.value = {
+    x: event.clientX + 10,
+    y: event.clientY - 30
   };
+  tooltipVisible.value = true;
 };
 
 const hideTooltip = () => {
   tooltipVisible.value = false;
 };
 
-const showComingSoonPopup = (title) => {
+const showPopup = (title) => {
   popupTitle.value = title;
   popupVisible.value = true;
-  document.body.style.overflow = 'hidden'; // Prevent background scroll
+  document.body.style.overflow = 'hidden'; // Prevent scroll
 };
 
 const closePopup = () => {
   popupVisible.value = false;
   document.body.style.overflow = ''; // Restore scroll
   emailNotification.value = '';
-  submitting.value = false;
-  submitSuccessMessage.value = '';
-  submitErrorMessage.value = '';
 };
 
-const subscribeNotification = async () => {
-  submitSuccessMessage.value = '';
-  submitErrorMessage.value = '';
-  if (!emailNotification.value || !emailNotification.value.includes('@')) {
-    submitErrorMessage.value = 'Por favor, insira um email válido.';
-    return;
-  }
-  submitting.value = true;
-  try {
-    const baseURL = import.meta.env.VITE_API_BASE_URL || '';
-    await axios.post(`${baseURL}/api/notify-ia-tools`, {
+const subscribeNotification = () => {
+  if (emailNotification.value && emailNotification.value.includes('@')) {
+    submitting.value = true;
+    
+    axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/notify-ia-tools`, {
       email: emailNotification.value,
       feature: popupTitle.value || 'IA Tools'
+    })
+    .then(() => {
+      showNotification.success(
+        'Interesse Registrado!', 
+        'Obrigado! Seu interesse foi registrado com sucesso.',
+        5000
+      );
+      closePopup();
+    })
+    .catch(error => {
+      showNotification.error(
+        'Erro ao Registrar', 
+        error.message || 'Não foi possível registrar seu interesse. Tente novamente.',
+        8000
+      );
+    })
+    .finally(() => {
+      submitting.value = false;
     });
-    submitSuccessMessage.value = 'Obrigado! Seu interesse foi registrado.';
-  } catch (e) {
-    submitErrorMessage.value = 'Não foi possível registrar seu interesse. Tente novamente mais tarde.';
-  } finally {
-    submitting.value = false;
+  } else {
+    showNotification.warning(
+      'Email Inválido', 
+      'Por favor, insira um email válido.',
+      5000
+    );
   }
 };
 </script>
@@ -538,17 +544,6 @@ const subscribeNotification = async () => {
 .popup-notify-btn:hover {
   background: linear-gradient(135deg, #1a65e0, #0a55d0);
   transform: translateY(-1px);
-}
-
-.status-message {
-  margin-top: 0.75rem;
-  font-size: 0.95rem;
-}
-.status-message.success {
-  color: #0f7b3e;
-}
-.status-message.error {
-  color: #b00020;
 }
 
 @keyframes overlayFadeIn {

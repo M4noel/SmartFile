@@ -13,6 +13,8 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  // Configuração para produção
+  base: '/',
   server: {
     proxy: {
       '/api': {
@@ -23,22 +25,48 @@ export default defineConfig({
     },
   },
   build: {
+    // Otimizações para produção
+    target: 'es2015',
+    minify: 'terser',
     rollupOptions: {
       output: {
-        assetFileNames: '[name].[hash][extname]',
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name.split('.')
+          const ext = info[info.length - 1]
+          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
+            return `assets/images/[name]-[hash][extname]`
+          }
+          if (/css/i.test(ext)) {
+            return `assets/css/[name]-[hash][extname]`
+          }
+          return `assets/[name]-[hash][extname]`
+        },
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        manualChunks: {
+          vendor: ['vue', 'vue-router'],
+          pdf: ['pdf-lib', 'pdfjs-dist'],
+          ui: ['bootstrap']
+        }
       },
     },
     commonjsOptions: {
       transformMixedEsModules: true,
       esmExternals: true,
     },
+    // Otimizações de tamanho
+    chunkSizeWarningLimit: 1000,
+    sourcemap: false,
   },
   worker: {
     format: 'es',
-    plugins: () => [], // <- aqui deve ser função que retorna um array
+    plugins: () => [],
   },
   optimizeDeps: {
     include: [
+      'vue',
+      'vue-router',
+      'axios',
       'pdfjs-dist/legacy/build/pdf.mjs',
       'pdfjs-dist/legacy/build/pdf.worker.mjs',
     ],
@@ -56,4 +84,9 @@ export default defineConfig({
       },
     },
   },
+  // Configurações específicas para Vercel
+  preview: {
+    port: 3000,
+    host: true
+  }
 })

@@ -1,0 +1,7 @@
+# Pastas a serem ignoradas no upload para a Vercel
+node_modules
+.vite
+src/**/*.map
+*.log
+.DS_Store
+Thumbs.db

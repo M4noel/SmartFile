@@ -131,6 +131,7 @@
         </div>
       </div>
     </footer>
+    <Analytics />
   </div>
 </template>
 
@@ -138,6 +139,7 @@
 import { ref } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
 import AdBanner from '@/components/AdBanner.vue';
+import { Analytics } from '@vercel/analytics/vue';
 
 const mobileMenuOpen = ref(false);
 

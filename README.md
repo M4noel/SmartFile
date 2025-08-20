@@ -129,6 +129,21 @@ smartfiles/
 └── README.md                       # Este arquivo
 ```
 
+## 📊 Analytics e Monitoramento
+
+### Vercel Analytics
+- **Métricas em tempo real**: Page views, visitantes únicos, duração de sessão
+- **Performance**: Core Web Vitals, tempos de carregamento, taxas de erro
+- **Usuários**: Localização geográfica, tipos de dispositivos, navegadores
+- **SEO Insights**: Análise de comportamento para otimização
+
+### Como acessar
+1. Acesse [vercel.com](https://vercel.com)
+2. Selecione seu projeto `smartfiles`
+3. Vá para a aba "Analytics" ou "Insights"
+
+---
+
 ## 🛠️ Tecnologias
 
 ### Frontend

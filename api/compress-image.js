@@ -41,7 +41,8 @@ export default async function handler(req, res) {
       .toBuffer();
     
     res.setHeader('Content-Type', `image/${format}`);
-    res.send(compressed);
+    res.status(200).end(compressed); 
+
     
   } catch (error) {
     console.error('Erro ao comprimir imagem:', error);

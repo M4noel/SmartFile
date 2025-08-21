@@ -447,7 +447,7 @@ async function processPdf() {
 
     // 🚀 Mande para o backend real (troque a porta se necessário)
     const response = await axios.post(
-      'http://localhost:3000/api/edit-pdf', // OU '/api/edit-pdf' se tiver proxy no Vite
+      `${import.meta.env.VITE_API_BASE_URL || ''}/api/edit-pdf`,
       formData,
       {
         responseType: 'blob',

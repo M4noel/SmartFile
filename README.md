@@ -114,7 +114,7 @@ SMTP_FROM=no-reply@smartfiles.com
 
 ### Variáveis de Ambiente (Frontend)
 ```env
-VITE_API_BASE_URL=http://localhost:3000
+VITE_API_BASE_URL=<sua_url_backend>
 ```
 
 ## 🚀 Deploy Rápido

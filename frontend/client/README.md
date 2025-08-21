@@ -19,7 +19,7 @@ npm install
 cp env.example .env
 
 # Editar .env com suas configurações
-# VITE_API_BASE_URL=http://localhost:3000 (desenvolvimento)
+# VITE_API_BASE_URL=<sua_url_backend>
 ```
 
 ### 2. Build Local

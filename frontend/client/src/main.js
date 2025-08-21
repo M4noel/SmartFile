@@ -7,7 +7,7 @@ import axios from 'axios';
 import { createHead } from '@vueuse/head';
 
 // Configure Axios base URL from environment variable
-axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || '';
 
 // Global Axios error interceptor
 axios.interceptors.response.use(

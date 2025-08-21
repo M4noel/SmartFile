@@ -8,10 +8,21 @@
       "config": {
         "distDir": "dist"
       }
+    },
+    {
+      "src": "server/api/**/*.js",
+      "use": "@vercel/node"
     }
   ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/api/(.*)",
+      "destination": "/server/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
@@ -29,4 +40,4 @@
       ]
     }
   ]
-}
+} 

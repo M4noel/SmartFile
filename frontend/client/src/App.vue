@@ -135,6 +135,9 @@
     <!-- Sistema de Notificações -->
     <NotificationToast ref="notificationToast" />
     
+    <!-- Sistema de Gerenciamento de Cookies -->
+    <CookieManager />
+    
     <Analytics />
   </div>
 </template>
@@ -145,6 +148,7 @@ import { RouterLink, RouterView } from 'vue-router';
 import AdBanner from '@/components/AdBanner.vue';
 import { Analytics } from '@vercel/analytics/vue';
 import NotificationToast from '@/components/NotificationToast.vue';
+import CookieManager from '@/components/CookieManager.vue';
 
 const mobileMenuOpen = ref(false);
 const notificationToast = ref(null);

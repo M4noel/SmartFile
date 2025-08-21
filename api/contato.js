@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { setupCORS, handlePreflight, parseRequestBody } from './utils/multipart.js';
+import { setupCORS, handlePreflight, parseRequestBody, sendJson } from './utils/multipart.js';
 
 function criarTransporter() {
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
@@ -20,14 +20,14 @@ function criarTransporter() {
 
 export default async function handler(req, res) {
   // Configurar CORS
-  setupCORS(res, process.env.CORS_ORIGIN?.split(',') || '*');
+  setupCORS(req, res, process.env.CORS_ORIGIN?.split(',') || '*');
   
   // Handle preflight request
   if (handlePreflight(req, res)) return;
   
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    return sendJson(res, 405, { error: 'Method Not Allowed' });
   }
   
   try {
@@ -38,19 +38,19 @@ export default async function handler(req, res) {
     const formData = {};
     body.split('&').forEach(pair => {
       const [key, value] = pair.split('=');
-      if (key && value) {
-        formData[decodeURIComponent(key)] = decodeURIComponent(value);
+      if (key && value !== undefined) {
+        formData[decodeURIComponent(key)] = decodeURIComponent(value.replace(/\+/g, ' '));
       }
     });
     
     const { nome, email, assunto, mensagem } = formData;
     
     if (!nome || !email || !assunto || !mensagem) {
-      return res.status(400).json({ success: false, error: 'Todos os campos são obrigatórios' });
+      return sendJson(res, 400, { success: false, error: 'Todos os campos são obrigatórios' });
     }
     
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.status(400).json({ success: false, error: 'Email inválido' });
+      return sendJson(res, 400, { success: false, error: 'Email inválido' });
     }
     
     const adminRecipient = process.env.ADMIN_EMAIL || 'murilomanoel221@gmail.com';
@@ -66,7 +66,7 @@ export default async function handler(req, res) {
     if (transporter) {
       try {
         await transporter.sendMail({
-          from: `"SmartFiles - Contato" <${process.env.SMTP_FROM || process.env.GMAIL_USER}>`,
+          from: `"SmartFiles - Contato" <${process.env.SMTP_FROM || process.env.GMAIL_USER || 'no-reply@smartfiles.local'}>`,
           to: adminRecipient,
           subject,
           text
@@ -76,11 +76,11 @@ export default async function handler(req, res) {
       }
     }
     
-    return res.json({ success: true });
+    return sendJson(res, 200, { success: true });
     
   } catch (error) {
     console.error('Erro ao processar contato:', error);
-    return res.status(500).json({ success: false, error: 'Erro interno ao processar mensagem' });
+    return sendJson(res, 500, { success: false, error: 'Erro interno ao processar mensagem' });
   }
 }
 

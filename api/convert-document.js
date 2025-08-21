@@ -1,65 +1,71 @@
-import multer from 'multer';
-import cors from 'cors';
-import { convertDocument, detectFormat } from '../server/utils/documentConverter.js';
-
-const storage = multer.memoryStorage();
-const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
+import { convertDocument, detectFormat, SUPPORTED_INPUT_FORMATS, SUPPORTED_OUTPUT_FORMATS } from '../server/utils/documentConverter.js';
+import { setupCORS, handlePreflight, parseRequestBody, parseMultipart, sendJson } from './utils/multipart.js';
 
 export default async function handler(req, res) {
-  cors({ origin: process.env.CORS_ORIGIN?.split(',') || '*' })(req, res, async () => {
-    if (req.method !== 'POST') {
-      res.setHeader('Allow', 'POST');
-      return res.status(405).json({ error: 'Method Not Allowed' });
+  setupCORS(res, process.env.CORS_ORIGIN?.split(',') || '*');
+  if (handlePreflight(req, res)) return;
+
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return sendJson(res, 405, { error: 'Method Not Allowed' });
+  }
+
+  try {
+    const bodyBuffer = await parseRequestBody(req);
+    const boundary = req.headers['content-type']?.split('boundary=')[1];
+    if (!boundary) return sendJson(res, 400, { error: 'Content-Type boundary not found' });
+
+    const parts = parseMultipart(bodyBuffer, boundary);
+    const filePart = parts.find(p => p.filename);
+    if (!filePart) return sendJson(res, 400, { success: false, error: 'Nenhum arquivo enviado' });
+
+    const inputFormat = parts.find(p => p.name === 'inputFormat')?.data?.toString();
+    const outputFormat = parts.find(p => p.name === 'outputFormat')?.data?.toString();
+    const quality = parseInt(parts.find(p => p.name === 'quality')?.data?.toString() || '80', 10);
+
+    const detectedInputFormat = inputFormat || await detectFormat(filePart.data, filePart.filename || 'arquivo');
+
+    if (!SUPPORTED_INPUT_FORMATS.includes(detectedInputFormat?.toLowerCase())) {
+      return sendJson(res, 400, { success: false, error: `Formato de entrada não suportado: ${detectedInputFormat}` });
     }
-    upload.single('file')(req, res, async (err) => {
-      if (err) return res.status(400).json({ error: err.message });
-      try {
-        if (!req.file) return res.status(400).json({ success: false, error: 'Nenhum arquivo enviado' });
-        const { buffer } = req.file;
-        const { inputFormat, outputFormat, quality } = req.body;
-        const filename = req.file.originalname;
-        const detectedInputFormat = inputFormat || await detectFormat(buffer, filename);
-        const { SUPPORTED_INPUT_FORMATS, SUPPORTED_OUTPUT_FORMATS } = await import('../server/utils/documentConverter.js');
-        if (!SUPPORTED_INPUT_FORMATS.includes(detectedInputFormat?.toLowerCase())) {
-          return res.status(400).json({ success: false, error: `Formato de entrada não suportado: ${detectedInputFormat}` });
-        }
-        if (!SUPPORTED_OUTPUT_FORMATS.includes((outputFormat || '').toLowerCase())) {
-          return res.status(400).json({ success: false, error: `Formato de saída não suportado: ${outputFormat}` });
-        }
-        const convertedBuffer = await convertDocument(
-          buffer,
-          detectedInputFormat.toLowerCase(),
-          outputFormat.toLowerCase(),
-          { quality: parseInt(quality) || 80 }
-        );
-        let contentType = 'application/octet-stream';
-        let outputFilename = `documento-convertido.${outputFormat.toLowerCase()}`;
-        switch (outputFormat.toLowerCase()) {
-          case 'pdf': contentType = 'application/pdf'; outputFilename = 'documento.pdf'; break;
-          case 'docx': contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'; outputFilename = 'documento.docx'; break;
-          case 'xlsx': contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'; outputFilename = 'planilha.xlsx'; break;
-          case 'pptx': contentType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'; outputFilename = 'apresentacao.pptx'; break;
-          case 'txt': contentType = 'text/plain'; outputFilename = 'documento.txt'; break;
-          case 'csv': contentType = 'text/csv'; outputFilename = 'dados.csv'; break;
-          case 'json': contentType = 'application/json'; outputFilename = 'dados.json'; break;
-          case 'xml': contentType = 'application/xml'; outputFilename = 'documento.xml'; break;
-          case 'html': contentType = 'text/html'; outputFilename = 'documento.html'; break;
-          case 'md': contentType = 'text/markdown'; outputFilename = 'documento.md'; break;
-          case 'jpg':
-          case 'jpeg': contentType = 'image/jpeg'; outputFilename = 'imagem.jpg'; break;
-          case 'png': contentType = 'image/png'; outputFilename = 'imagem.png'; break;
-          case 'webp': contentType = 'image/webp'; outputFilename = 'imagem.webp'; break;
-          case 'tiff': contentType = 'image/tiff'; outputFilename = 'imagem.tiff'; break;
-        }
-        res.set('Content-Type', contentType);
-        res.set('Content-Disposition', `attachment; filename="${outputFilename}"`);
-        res.send(convertedBuffer);
-      } catch (error) {
-        console.error('Erro ao converter documento:', error);
-        res.status(500).json({ success: false, error: 'Erro interno ao converter documento', details: error.message });
-      }
-    });
-  });
+    if (!SUPPORTED_OUTPUT_FORMATS.includes((outputFormat || '').toLowerCase())) {
+      return sendJson(res, 400, { success: false, error: `Formato de saída não suportado: ${outputFormat}` });
+    }
+
+    const convertedBuffer = await convertDocument(
+      filePart.data,
+      detectedInputFormat.toLowerCase(),
+      outputFormat.toLowerCase(),
+      { quality }
+    );
+
+    let contentType = 'application/octet-stream';
+    let outputFilename = `documento-convertido.${outputFormat.toLowerCase()}`;
+    switch (outputFormat.toLowerCase()) {
+      case 'pdf': contentType = 'application/pdf'; outputFilename = 'documento.pdf'; break;
+      case 'docx': contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'; outputFilename = 'documento.docx'; break;
+      case 'xlsx': contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'; outputFilename = 'planilha.xlsx'; break;
+      case 'pptx': contentType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'; outputFilename = 'apresentacao.pptx'; break;
+      case 'txt': contentType = 'text/plain'; outputFilename = 'documento.txt'; break;
+      case 'csv': contentType = 'text/csv'; outputFilename = 'dados.csv'; break;
+      case 'json': contentType = 'application/json'; outputFilename = 'dados.json'; break;
+      case 'xml': contentType = 'application/xml'; outputFilename = 'documento.xml'; break;
+      case 'html': contentType = 'text/html'; outputFilename = 'documento.html'; break;
+      case 'md': contentType = 'text/markdown'; outputFilename = 'documento.md'; break;
+      case 'jpg':
+      case 'jpeg': contentType = 'image/jpeg'; outputFilename = 'imagem.jpg'; break;
+      case 'png': contentType = 'image/png'; outputFilename = 'imagem.png'; break;
+      case 'webp': contentType = 'image/webp'; outputFilename = 'imagem.webp'; break;
+      case 'tiff': contentType = 'image/tiff'; outputFilename = 'imagem.tiff'; break;
+    }
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${outputFilename}"`);
+    res.end(convertedBuffer);
+  } catch (error) {
+    console.error('Erro ao converter documento:', error);
+    return sendJson(res, 500, { success: false, error: 'Erro interno ao converter documento', details: error.message });
+  }
 }
 
 

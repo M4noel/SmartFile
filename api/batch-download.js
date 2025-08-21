@@ -1,16 +1,16 @@
 import tempStorageModule from '../server/utils/tempStorage.js';
-import { setupCORS, handlePreflight, parseRequestBody } from './utils/multipart.js';
+import { setupCORS, handlePreflight, parseRequestBody, sendJson } from './utils/multipart.js';
 
 export default async function handler(req, res) {
   // Configurar CORS
-  setupCORS(res, process.env.CORS_ORIGIN?.split(',') || '*');
+  setupCORS(req, res, process.env.CORS_ORIGIN?.split(',') || '*');
   
   // Handle preflight request
   if (handlePreflight(req, res)) return;
   
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    return sendJson(res, 405, { error: 'Method Not Allowed' });
   }
   
   try {
@@ -23,7 +23,7 @@ export default async function handler(req, res) {
       const data = JSON.parse(body);
       fileIds = data.fileIds;
     } catch (e) {
-      return res.status(400).json({ success: false, error: 'Body deve ser JSON válido' });
+      return sendJson(res, 400, { success: false, error: 'Body deve ser JSON válido' });
     }
     
     const files = [];
@@ -37,17 +37,17 @@ export default async function handler(req, res) {
     }
     
     if (files.length === 0) {
-      return res.status(404).json({ success: false, error: 'Nenhum arquivo encontrado' });
+      return sendJson(res, 404, { success: false, error: 'Nenhum arquivo encontrado' });
     }
     
     const zipBuffer = await tempStorageModule.createZipArchive(files);
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', 'attachment; filename="arquivos-processados.zip"');
-    res.send(zipBuffer);
+    res.end(zipBuffer);
     
   } catch (error) {
     console.error('Erro ao criar download em lote:', error);
-    res.status(500).json({ success: false, error: 'Erro interno ao criar download em lote', details: error.message });
+    return sendJson(res, 500, { success: false, error: 'Erro interno ao criar download em lote', details: error.message });
   }
 }
 

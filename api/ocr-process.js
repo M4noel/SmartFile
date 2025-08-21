@@ -1,34 +1,37 @@
-import multer from 'multer';
-import cors from 'cors';
 import ocrProcessor from '../server/utils/ocrProcessor.js';
-
-const storage = multer.memoryStorage();
-const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
+import { setupCORS, handlePreflight, parseRequestBody, parseMultipart, sendJson } from './utils/multipart.js';
 
 export default async function handler(req, res) {
-  cors({ origin: process.env.CORS_ORIGIN?.split(',') || '*' })(req, res, async () => {
-    if (req.method !== 'POST') {
-      res.setHeader('Allow', 'POST');
-      return res.status(405).json({ error: 'Method Not Allowed' });
+  setupCORS(res, process.env.CORS_ORIGIN?.split(',') || '*');
+  if (handlePreflight(req, res)) return;
+
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return sendJson(res, 405, { error: 'Method Not Allowed' });
+  }
+  try {
+    const bodyBuffer = await parseRequestBody(req);
+    const boundary = req.headers['content-type']?.split('boundary=')[1];
+    if (!boundary) return sendJson(res, 400, { error: 'Content-Type boundary not found' });
+
+    const parts = parseMultipart(bodyBuffer, boundary);
+    const filePart = parts.find(p => p.filename);
+    if (!filePart) return sendJson(res, 400, { success: false, error: 'Nenhum arquivo enviado' });
+
+    const language = parts.find(p => p.name === 'language')?.data?.toString() || 'por';
+    const outputFormat = parts.find(p => p.name === 'outputFormat')?.data?.toString();
+
+    const ocrResult = await ocrProcessor(filePart.data, language);
+    if (outputFormat === 'json') {
+      return sendJson(res, 200, ocrResult);
+    } else {
+      res.setHeader('Content-Type', 'text/plain');
+      res.end(ocrResult.text);
     }
-    upload.single('file')(req, res, async (err) => {
-      if (err) return res.status(400).json({ error: err.message });
-      try {
-        const { buffer } = req.file;
-        const { language, outputFormat } = req.body;
-        const ocrResult = await ocrProcessor(buffer, language || 'por');
-        if (outputFormat === 'json') {
-          res.json(ocrResult);
-        } else {
-          res.set('Content-Type', 'text/plain');
-          res.send(ocrResult.text);
-        }
-      } catch (error) {
-        console.error('Erro ao processar OCR:', error);
-        res.status(500).json({ success: false, error: 'Erro interno ao processar OCR', details: error.message });
-      }
-    });
-  });
+  } catch (error) {
+    console.error('Erro ao processar OCR:', error);
+    return sendJson(res, 500, { success: false, error: 'Erro interno ao processar OCR', details: error.message });
+  }
 }
 
 

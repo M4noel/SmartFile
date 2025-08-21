@@ -1,29 +1,30 @@
-import multer from 'multer';
-import cors from 'cors';
 import tempStorageModule from '../server/utils/tempStorage.js';
-
-const storage = multer.memoryStorage();
-const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
+import { setupCORS, handlePreflight, parseRequestBody, parseMultipart, sendJson } from './utils/multipart.js';
 
 export default async function handler(req, res) {
-  cors({ origin: process.env.CORS_ORIGIN?.split(',') || '*' })(req, res, async () => {
-    if (req.method !== 'POST') {
-      res.setHeader('Allow', 'POST');
-      return res.status(405).json({ error: 'Method Not Allowed' });
-    }
-    upload.single('file')(req, res, async (err) => {
-      if (err) return res.status(400).json({ error: err.message });
-      try {
-        const { buffer } = req.file;
-        const filename = req.file.originalname;
-        const storedFile = await tempStorageModule.storeFile(buffer, filename);
-        res.json({ success: true, fileId: storedFile.id, filename: storedFile.originalName });
-      } catch (error) {
-        console.error('Erro ao armazenar arquivo:', error);
-        res.status(500).json({ success: false, error: 'Erro interno ao armazenar arquivo', details: error.message });
-      }
-    });
-  });
+  setupCORS(res, process.env.CORS_ORIGIN?.split(',') || '*');
+  if (handlePreflight(req, res)) return;
+
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return sendJson(res, 405, { error: 'Method Not Allowed' });
+  }
+
+  try {
+    const bodyBuffer = await parseRequestBody(req);
+    const boundary = req.headers['content-type']?.split('boundary=')[1];
+    if (!boundary) return sendJson(res, 400, { error: 'Content-Type boundary not found' });
+
+    const parts = parseMultipart(bodyBuffer, boundary);
+    const filePart = parts.find(p => p.filename);
+    if (!filePart) return sendJson(res, 400, { success: false, error: 'Nenhum arquivo enviado' });
+
+    const storedFile = await tempStorageModule.storeFile(filePart.data, filePart.filename || 'arquivo');
+    return sendJson(res, 200, { success: true, fileId: storedFile.id, filename: storedFile.originalName });
+  } catch (error) {
+    console.error('Erro ao armazenar arquivo:', error);
+    return sendJson(res, 500, { success: false, error: 'Erro interno ao armazenar arquivo', details: error.message });
+  }
 }
 
 

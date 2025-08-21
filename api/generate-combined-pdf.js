@@ -1,56 +1,64 @@
-import multer from 'multer';
-import cors from 'cors';
 import pdfEditor from '../server/utils/pdfEditor.js';
-
-const storage = multer.memoryStorage();
-const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
+import { setupCORS, handlePreflight, parseRequestBody, parseMultipart, sendJson } from './utils/multipart.js';
 
 export default async function handler(req, res) {
-  cors({ origin: process.env.CORS_ORIGIN?.split(',') || '*' })(req, res, async () => {
-    if (req.method !== 'POST') {
-      res.setHeader('Allow', 'POST');
-      return res.status(405).json({ error: 'Method Not Allowed' });
-    }
-    upload.any()(req, res, async (err) => {
-      if (err) return res.status(400).json({ error: err.message });
-      try {
-        const { title, pageSize, fontSize, contentData } = req.body;
-        const parsedContentData = JSON.parse(contentData);
-        const contentItems = [];
-        let imageIndex = 0;
-        for (let i = 0; i < parsedContentData.length; i++) {
-          const item = parsedContentData[i];
-          const contentItem = { type: item.type };
-          switch (item.type) {
-            case 'text':
-              contentItem.content = item.content || '';
-              break;
-            case 'image':
-              const fieldName = `image_${imageIndex}`;
-              if (req.files && req.files[fieldName]) {
-                contentItem.imageBuffer = req.files[fieldName][0].buffer;
-                imageIndex++;
-              }
-              break;
-            case 'table':
-              if (item.tableData) {
-                contentItem.tableData = item.tableData;
-                contentItem.tableHeaders = item.tableHeaders || [];
-              }
-              break;
+  setupCORS(res, process.env.CORS_ORIGIN?.split(',') || '*');
+  if (handlePreflight(req, res)) return;
+
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return sendJson(res, 405, { error: 'Method Not Allowed' });
+  }
+  try {
+    const bodyBuffer = await parseRequestBody(req);
+    const boundary = req.headers['content-type']?.split('boundary=')[1];
+    if (!boundary) return sendJson(res, 400, { error: 'Content-Type boundary not found' });
+
+    const parts = parseMultipart(bodyBuffer, boundary);
+    const title = parts.find(p => p.name === 'title')?.data?.toString();
+    const pageSize = parts.find(p => p.name === 'pageSize')?.data?.toString();
+    const fontSize = parts.find(p => p.name === 'fontSize')?.data?.toString();
+    const contentDataPart = parts.find(p => p.name === 'contentData')?.data?.toString();
+
+    if (!contentDataPart) return sendJson(res, 400, { success: false, error: 'contentData é obrigatório' });
+
+    const parsedContentData = JSON.parse(contentDataPart);
+    const contentItems = [];
+
+    let imageIndex = 0;
+    for (let i = 0; i < parsedContentData.length; i++) {
+      const item = parsedContentData[i];
+      const contentItem = { type: item.type };
+      switch (item.type) {
+        case 'text':
+          contentItem.content = item.content || '';
+          break;
+        case 'image':
+          const fieldName = `image_${imageIndex}`;
+          const filePart = parts.find(p => p.name === fieldName);
+          if (filePart) {
+            contentItem.imageBuffer = filePart.data;
+            imageIndex++;
           }
-          contentItems.push(contentItem);
-        }
-        const pdfBuffer = await pdfEditor.createPdfFromMultipleContent(contentItems, { title, pageSize, fontSize });
-        res.set('Content-Type', 'application/pdf');
-        res.set('Content-Disposition', 'attachment; filename="documento.pdf"');
-        res.send(pdfBuffer);
-      } catch (error) {
-        console.error('Erro ao gerar PDF combinado:', error);
-        res.status(500).json({ success: false, error: 'Erro interno ao gerar PDF combinado', details: error.message });
+          break;
+        case 'table':
+          if (item.tableData) {
+            contentItem.tableData = item.tableData;
+            contentItem.tableHeaders = item.tableHeaders || [];
+          }
+          break;
       }
-    });
-  });
+      contentItems.push(contentItem);
+    }
+
+    const pdfBuffer = await pdfEditor.createPdfFromMultipleContent(contentItems, { title, pageSize, fontSize });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="documento.pdf"');
+    res.end(pdfBuffer);
+  } catch (error) {
+    console.error('Erro ao gerar PDF combinado:', error);
+    return sendJson(res, 500, { success: false, error: 'Erro interno ao gerar PDF combinado', details: error.message });
+  }
 }
 
 

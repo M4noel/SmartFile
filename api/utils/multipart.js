@@ -55,15 +55,32 @@ function parsePart(partBuffer) {
   };
 }
 
-export function setupCORS(res, allowedOrigin = '*') {
-  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+export function setupCORS(req, res, allowedOrigins = '*') {
+  const requestOrigin = req.headers.origin;
+  let allowOrigin = '*';
+
+  if (allowedOrigins && allowedOrigins !== '*') {
+    const origins = Array.isArray(allowedOrigins)
+      ? allowedOrigins
+      : String(allowedOrigins).split(',');
+    const trimmed = origins.map(o => o.trim()).filter(Boolean);
+    if (requestOrigin && trimmed.includes(requestOrigin)) {
+      allowOrigin = requestOrigin;
+    } else if (trimmed.length > 0) {
+      allowOrigin = trimmed[0];
+    }
+    res.setHeader('Vary', 'Origin');
+  }
+
+  res.setHeader('Access-Control-Allow-Origin', allowOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
 export function handlePreflight(req, res) {
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
+    res.statusCode = 200;
+    res.end();
     return true;
   }
   return false;
@@ -76,4 +93,10 @@ export function parseRequestBody(req) {
     req.on('end', () => resolve(Buffer.concat(chunks)));
     req.on('error', reject);
   });
+}
+
+export function sendJson(res, status, data) {
+  res.statusCode = status;
+  res.setHeader('Content-Type', 'application/json');
+  res.end(JSON.stringify(data));
 }

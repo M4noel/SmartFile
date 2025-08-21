@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { setupCORS, handlePreflight, parseRequestBody } from './utils/multipart.js';
+import { setupCORS, handlePreflight, parseRequestBody, sendJson } from './utils/multipart.js';
 
 function criarTransporter() {
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
@@ -20,14 +20,14 @@ function criarTransporter() {
 
 export default async function handler(req, res) {
   // Configurar CORS
-  setupCORS(res, process.env.CORS_ORIGIN?.split(',') || '*');
+  setupCORS(req, res, process.env.CORS_ORIGIN?.split(',') || '*');
   
   // Handle preflight request
   if (handlePreflight(req, res)) return;
   
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    return sendJson(res, 405, { error: 'Method Not Allowed' });
   }
   
   try {
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     const { email, feature } = formData;
     
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.status(400).json({ success: false, error: 'Email inválido' });
+      return sendJson(res, 400, { success: false, error: 'Email inválido' });
     }
     
     const adminRecipient = process.env.ADMIN_EMAIL || 'murilomanoel221@gmail.com';
@@ -68,11 +68,11 @@ export default async function handler(req, res) {
       }
     }
     
-    return res.json({ success: true });
+    return sendJson(res, 200, { success: true });
     
   } catch (error) {
     console.error('Erro ao processar notificação:', error);
-    return res.status(500).json({ success: false, error: 'Erro interno' });
+    return sendJson(res, 500, { success: false, error: 'Erro interno' });
   }
 }
 

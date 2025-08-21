@@ -21,7 +21,7 @@ export default async function handler(req, res) {
       if (files.length === 0) return res.status(404).json({ success: false, error: 'Nenhum arquivo encontrado' });
       const zipBuffer = await tempStorageModule.createZipArchive(files);
       res.set('Content-Type', 'application/zip');
-      res.set('Content-Disposition', 'attachment; filename=\"arquivos-processados.zip\"');
+      res.set('Content-Disposition', 'attachment; filename="arquivos-processados.zip"');
       res.send(zipBuffer);
     } catch (error) {
       console.error('Erro ao criar download em lote:', error);

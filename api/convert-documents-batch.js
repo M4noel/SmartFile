@@ -24,7 +24,7 @@ export default async function handler(req, res) {
         const archiver = (await import('archiver')).default;
         const archive = archiver('zip', { zlib: { level: 9 } });
         res.set('Content-Type', 'application/zip');
-        res.set('Content-Disposition', 'attachment; filename=\"documentos-convertidos.zip\"');
+        res.set('Content-Disposition', 'attachment; filename="documentos-convertidos.zip"');
         archive.pipe(res);
         for (const file of req.files) {
           try {

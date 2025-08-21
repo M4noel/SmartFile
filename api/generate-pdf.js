@@ -33,7 +33,7 @@ export default async function handler(req, res) {
             return res.status(400).json({ success: false, error: `Tipo não suportado: ${type}` });
         }
         res.set('Content-Type', 'application/pdf');
-        res.set('Content-Disposition', 'attachment; filename=\"documento.pdf\"');
+        res.set('Content-Disposition', 'attachment; filename="documento.pdf"');
         res.send(pdfBuffer);
       } catch (error) {
         console.error('Erro ao gerar PDF:', error);

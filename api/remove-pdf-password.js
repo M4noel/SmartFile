@@ -22,7 +22,7 @@ export default async function handler(req, res) {
           const pdfDoc = await PDFDocument.load(buffer, { password, ignoreEncryption: true });
           const unprotectedBuffer = await pdfDoc.save();
           res.set('Content-Type', 'application/pdf');
-          res.set('Content-Disposition', 'attachment; filename=\"pdf-sem-senha.pdf\"');
+          res.set('Content-Disposition', 'attachment; filename="pdf-sem-senha.pdf"');
           res.send(Buffer.from(unprotectedBuffer));
         } catch (e) {
           return res.status(400).json({ success: false, error: 'Senha incorreta ou PDF não pode ser descriptografado' });

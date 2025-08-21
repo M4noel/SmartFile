@@ -18,7 +18,7 @@ export default async function handler(req, res) {
         const imageBuffers = req.files.map(f => f.buffer);
         const pdfBuffer = await pdfEditor.createPdfFromImages(imageBuffers);
         res.set('Content-Type', 'application/pdf');
-        res.set('Content-Disposition', 'attachment; filename=\"imagens-convertidas.pdf\"');
+        res.set('Content-Disposition', 'attachment; filename="imagens-convertidas.pdf"');
         res.send(pdfBuffer);
       } catch (error) {
         console.error('Erro ao criar PDF a partir de imagens:', error);

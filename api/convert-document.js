@@ -52,7 +52,7 @@ export default async function handler(req, res) {
           case 'tiff': contentType = 'image/tiff'; outputFilename = 'imagem.tiff'; break;
         }
         res.set('Content-Type', contentType);
-        res.set('Content-Disposition', `attachment; filename=\"${outputFilename}\"`);
+        res.set('Content-Disposition', `attachment; filename="${outputFilename}"`);
         res.send(convertedBuffer);
       } catch (error) {
         console.error('Erro ao converter documento:', error);

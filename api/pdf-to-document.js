@@ -30,7 +30,7 @@ export default async function handler(req, res) {
           case 'html': contentType = 'text/html'; filename = 'documento.html'; break;
         }
         res.set('Content-Type', contentType);
-        res.set('Content-Disposition', `attachment; filename=\"${filename}\"`);
+        res.set('Content-Disposition', `attachment; filename="${filename}"`);
         res.send(converted);
       } catch (error) {
         console.error('Erro ao converter PDF para documento:', error);

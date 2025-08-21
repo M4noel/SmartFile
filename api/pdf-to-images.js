@@ -1,6 +1,6 @@
 import multer from 'multer';
 import cors from 'cors';
-import documentToImageConverter from '../server/utils/pdfToImageConverter.js';
+import pdfToImageConverter from '../server/utils/pdfToImageConverter.js';
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
@@ -21,11 +21,11 @@ export default async function handler(req, res) {
         if (!supported.includes((format || '').toLowerCase())) {
           return res.status(400).json({ success: false, error: `Formato não suportado: ${format}. Use jpeg, png ou webp.` });
         }
-        const images = await documentToImageConverter(buffer, 'pdf', format.toLowerCase());
+        const images = await pdfToImageConverter(buffer, 'pdf', format.toLowerCase());
         const archiver = (await import('archiver')).default;
         const archive = archiver('zip', { zlib: { level: 9 } });
         res.set('Content-Type', 'application/zip');
-        res.set('Content-Disposition', 'attachment; filename=\"pdf-imagens.zip\"');
+        res.set('Content-Disposition', 'attachment; filename="pdf-imagens.zip"');
         archive.pipe(res);
         for (const image of images) {
           archive.append(image.buffer, { name: `page-${image.pageNumber}.${format.toLowerCase()}` });

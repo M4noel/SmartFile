@@ -46,7 +46,7 @@ export default async function handler(req, res) {
             break;
         }
         res.set('Content-Type', contentType);
-        res.set('Content-Disposition', `attachment; filename=\"${outputFilename}\"`);
+        res.set('Content-Disposition', `attachment; filename="${outputFilename}"`);
         res.send(recoveredBuffer);
       } catch (error) {
         console.error('Erro ao recuperar documento:', error);

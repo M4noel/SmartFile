@@ -17,6 +17,7 @@ import tempStorageModule from '../utils/tempStorage.js';
 import compressImage from '../utils/imageCompressor.js';
 import QRCode from 'qrcode';
 import nodemailer from 'nodemailer';
+import 'dotenv/config';
 import pkg from 'node-qpdf';
 const { decrypt } = pkg;
 export default function router(upload) {
@@ -864,60 +865,135 @@ router.post('/compress-image', upload.single('image'), async (req, res) => {
     }
   });
 
-  // Rota para receber emails de interesse de IA Tools
-  router.post('/notify-ia-tools', async (req, res) => {
-    try {
-      const { email, feature } = req.body || {};
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return res.status(400).json({ success: false, error: 'Email inválido' });
-      }
+ 
+  // Função para criar transporter
+function criarTransporter() {
+  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || "587"),
+      secure: process.env.SMTP_SECURE === "true",
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+  } else if (process.env.GMAIL_USER && process.env.GMAIL_PASS) {
+    return nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASS,
+      },
+    });
+  }
+  return null;
+}
 
-      // Tenta enviar email para o administrador (Murilo)
-      const adminRecipient = 'murilomanoel221@gmail.com';
-      const subject = 'Novo interesse em IA Tools';
-      const text = `Um usuário solicitou notificação para IA Tools.\n\n` +
-                   `Email do usuário: ${email}\n` +
-                   `Recurso: ${feature || 'IA Tools'}\n` +
-                   `Data: ${new Date().toISOString()}`;
+router.post("/notify-ia-tools", async (req, res) => {
+  try {
+    const { email, feature } = req.body || {};
+    console.log("[notify-ia-tools] Payload recebido:", req.body);
 
-      // Transporter baseado em variáveis de ambiente
-      let transporter;
-      if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-        transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST,
-          port: parseInt(process.env.SMTP_PORT || '587'),
-          secure: process.env.SMTP_SECURE === 'true',
-          auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-        });
-      } else if (process.env.GMAIL_USER && process.env.GMAIL_PASS) {
-        transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
-        });
-      }
-
-      if (transporter) {
-        try {
-          await transporter.sendMail({
-            from: process.env.SMTP_FROM || process.env.GMAIL_USER || 'no-reply@smartfiles.local',
-            to: adminRecipient,
-            subject,
-            text
-          });
-          return res.json({ success: true });
-        } catch (sendErr) {
-          console.warn('Falha ao enviar email (seguirá com fallback):', sendErr?.message);
-        }
-      }
-
-      // Fallback: loga e retorna sucesso para não exibir erro técnico ao usuário
-      console.log(`[notify-ia-tools] Registro (sem envio SMTP configurado):`, { email, feature });
-      return res.json({ success: true });
-    } catch (error) {
-      console.error('Erro ao registrar notificação IA Tools:', error);
-      res.status(500).json({ success: false, error: 'Erro interno ao registrar notificação' });
+    // valida email
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      console.warn("[notify-ia-tools] Email inválido recebido:", email);
+      return res.status(400).json({ success: false, error: "Email inválido" });
     }
-  });
+
+    // sempre envia pro admin
+    const adminRecipient = process.env.ADMIN_EMAIL || "murilomanoel221@gmail.com";
+    const subject = "Novo interesse em IA Tools";
+
+    // mensagem que vai chegar pra você
+    const text = `
+Um usuário demonstrou interesse em IA Tools:
+
+📧 Email do usuário: ${email}
+🛠️ Recurso: ${feature || "IA Tools"}
+📅 Data: ${new Date().toISOString()}
+`;
+
+    console.log("[notify-ia-tools] Preparando transporter...");
+    const transporter = criarTransporter();
+
+    if (!transporter) {
+      console.error("[notify-ia-tools] Transporter NÃO configurado! Variáveis .env podem estar faltando.");
+      return res.json({ success: true });
+    }
+
+    try {
+      console.log("[notify-ia-tools] Enviando email...");
+      await transporter.sendMail({
+        from: `"SmartFiles - Contato" <${process.env.SMTP_FROM || process.env.GMAIL_USER || "no-reply@smartfiles.local"}>`,
+        to: adminRecipient,
+        subject,
+        text,
+        replyTo: email, // opcional: se você clicar em "responder", vai para o usuário
+      });
+
+      console.log("[notify-ia-tools] ✅ Email enviado com sucesso para admin:", adminRecipient);
+    } catch (err) {
+      console.error("[notify-ia-tools] ❌ Falha ao enviar email:", err);
+    }
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("[notify-ia-tools] ❌ Erro interno:", error);
+    return res.status(500).json({ success: false, error: "Erro interno" });
+  }
+});
+
+
+// ======================
+// Rota: Contato
+// ======================
+router.post('/contato', async (req, res) => {
+  try {
+    const { nome, email, assunto, mensagem } = req.body || {};
+
+    // Validação
+    if (!nome || !email || !assunto || !mensagem) {
+      return res.status(400).json({ success: false, error: 'Todos os campos são obrigatórios' });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ success: false, error: 'Email inválido' });
+    }
+
+    const adminRecipient = process.env.ADMIN_EMAIL || 'murilomanoel221@gmail.com';
+    const subject = `Nova mensagem de contato: ${assunto}`;
+    const text = `Mensagem recebida do formulário de contato do SmartFiles:\n\n` +
+                 `Nome: ${nome}\n` +
+                 `Email: ${email}\n` +
+                 `Assunto: ${assunto}\n` +
+                 `Mensagem:\n${mensagem}\n\n` +
+                 `Data: ${new Date().toISOString()}`;
+
+    const transporter = criarTransporter();
+
+    if (transporter) {
+      try {
+        await transporter.sendMail({
+          from: `"SmartFiles - Contato" <${process.env.SMTP_FROM || process.env.GMAIL_USER}>`,
+          to: adminRecipient,
+          subject,
+          text
+        });
+        console.log('[contato] Email de contato enviado com sucesso.');
+      } catch (err) {
+        console.warn('[contato] Falha ao enviar email:', err?.message);
+      }
+    } else {
+      console.log('[contato] Transporter não configurado, fallback ativado.');
+    }
+
+    return res.json({ success: true });
+
+  } catch (error) {
+    console.error('[contato] Erro interno:', error);
+    return res.status(500).json({ success: false, error: 'Erro interno ao processar mensagem' });
+  }
+});
 
   // Rota para gerar PDFs simples
   router.post('/generate-pdf', upload.fields([

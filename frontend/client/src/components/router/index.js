@@ -16,6 +16,7 @@ import QrCodeGenerator from '../pages/QrCodeGenerator.vue';
 import IaTools from '../pages/IaTools.vue';
 import TermosDeUso from '../pages/TermosDeUso.vue';
 import PoliticaPrivacidade from '../pages/PoliticaPrivacidade.vue';
+import Contato from '../pages/Contato.vue';
 import NotFound from '../pages/404.vue';
 
 const routes = [
@@ -36,6 +37,7 @@ const routes = [
   { path: '/ia-tools', component: IaTools },
   { path: '/termos', component: TermosDeUso },
   { path: '/privacidade', component: PoliticaPrivacidade },
+  { path: '/contato', component: Contato },
   // Catch-all route for 404 errors
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFound }
 ];

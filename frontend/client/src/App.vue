@@ -106,9 +106,9 @@
           <div class="footer-section">
             <h4>Suporte</h4>
             <ul class="footer-links">
-              <li><a href="/ajuda">Central de Ajuda</a></li>
+              <!-- <li><a href="/ajuda">Central de Ajuda</a></li> -->
               <li><a href="/contato">Contato</a></li>
-              <li><a href="/feedback">Enviar Feedback</a></li>
+              <!-- <li><a href="/feedback">Enviar Feedback</a></li> -->
             </ul>
           </div>
         </div>

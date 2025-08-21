@@ -193,3 +193,4 @@ Após seguir todos os passos, você terá:
 - 📈 **SEO** otimizado para Google
 
 **SmartFiles está online e funcionando! 🚀**
+

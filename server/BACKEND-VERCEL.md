@@ -191,3 +191,4 @@ CORS_ORIGIN=https://seu-frontend.vercel.app
 4. 📊 Monitorar performance
 
 **Para funcionalidades completas, considere deploy híbrido! 🚀**
+

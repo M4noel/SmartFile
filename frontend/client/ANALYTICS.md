@@ -127,3 +127,4 @@ Agora você pode:
 - 📈 Otimizar para melhor SEO
 
 **Seus dados de analytics estão sendo coletados automaticamente! 🚀**
+

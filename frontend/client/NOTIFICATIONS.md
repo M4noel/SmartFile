@@ -254,3 +254,4 @@ window.showNotification.info('Título', 'Mensagem');
 - 🚀 Sistema global e fácil de usar
 
 **Substitua todos os `alert()` por notificações elegantes! 🚀**
+

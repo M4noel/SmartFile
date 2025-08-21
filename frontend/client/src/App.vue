@@ -65,7 +65,7 @@
         <div class="footer-main">
           <div class="footer-section">
             <h3>SmartFiles</h3>
-            <p>Oferecemos ferramentas inteligentes online para facilitar suas tarefas diárias. Compressão de imagens, conversão de documentos, edição de PDFs, remoção de senhas e muito mais.</p>
+            <p>Simplifique suas tarefas com nossas soluções práticas: comprima imagens, una PDFs, converta e redimensione imagens, edite e proteja seus PDFs com senha, gere novos PDFs, crie QR Codes e aproveite ferramentas de inteligência artificial para otimizar seu trabalho — tudo de forma rápida, segura e totalmente online.</p>
             <div class="social-links">
               <a href="#" class="social-link" title="Facebook">
                 <span>📘</span>

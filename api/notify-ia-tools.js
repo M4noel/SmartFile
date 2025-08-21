@@ -1,5 +1,5 @@
-import cors from 'cors';
 import nodemailer from 'nodemailer';
+import { setupCORS, handlePreflight, parseRequestBody } from './utils/multipart.js';
 
 function criarTransporter() {
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
@@ -19,36 +19,61 @@ function criarTransporter() {
 }
 
 export default async function handler(req, res) {
-  cors({ origin: process.env.CORS_ORIGIN?.split(',') || '*' })(req, res, async () => {
-    if (req.method !== 'POST') {
-      res.setHeader('Allow', 'POST');
-      return res.status(405).json({ error: 'Method Not Allowed' });
-    }
-    try {
-      const { email, feature } = req.body || {};
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return res.status(400).json({ success: false, error: 'Email inválido' });
+  // Configurar CORS
+  setupCORS(res, process.env.CORS_ORIGIN?.split(',') || '*');
+  
+  // Handle preflight request
+  if (handlePreflight(req, res)) return;
+  
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+  
+  try {
+    const buffer = await parseRequestBody(req);
+    const body = buffer.toString();
+    
+    // Parse form data (simple key=value format)
+    const formData = {};
+    body.split('&').forEach(pair => {
+      const [key, value] = pair.split('=');
+      if (key && value) {
+        formData[decodeURIComponent(key)] = decodeURIComponent(value);
       }
-      const adminRecipient = process.env.ADMIN_EMAIL || 'murilomanoel221@gmail.com';
-      const subject = 'Novo interesse em IA Tools';
-      const text = `\nUm usuário demonstrou interesse em IA Tools:\n\n📧 Email do usuário: ${email}\n🛠️ Recurso: ${feature || 'IA Tools'}\n📅 Data: ${new Date().toISOString()}\n`;
-      const transporter = criarTransporter();
-      if (transporter) {
-        try {
-          await transporter.sendMail({
-            from: `"SmartFiles - Contato" <${process.env.SMTP_FROM || process.env.GMAIL_USER || 'no-reply@smartfiles.local'}>`,
-            to: adminRecipient,
-            subject,
-            text,
-            replyTo: email
-          });
-        } catch (err) {}
-      }
-      return res.json({ success: true });
-    } catch (error) {
-      return res.status(500).json({ success: false, error: 'Erro interno' });
+    });
+    
+    const { email, feature } = formData;
+    
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ success: false, error: 'Email inválido' });
     }
-  });
+    
+    const adminRecipient = process.env.ADMIN_EMAIL || 'murilomanoel221@gmail.com';
+    const subject = 'Novo interesse em IA Tools';
+    const text = `\nUm usuário demonstrou interesse em IA Tools:\n\n📧 Email do usuário: ${email}\n🛠️ Recurso: ${feature || 'IA Tools'}\n📅 Data: ${new Date().toISOString()}\n`;
+    
+    const transporter = criarTransporter();
+    if (transporter) {
+      try {
+        await transporter.sendMail({
+          from: `"SmartFiles - Contato" <${process.env.SMTP_FROM || process.env.GMAIL_USER || 'no-reply@smartfiles.local'}>`,
+          to: adminRecipient,
+          subject,
+          text,
+          replyTo: email
+        });
+      } catch (err) {
+        console.error('Erro ao enviar email:', err);
+      }
+    }
+    
+    return res.json({ success: true });
+    
+  } catch (error) {
+    console.error('Erro ao processar notificação:', error);
+    return res.status(500).json({ success: false, error: 'Erro interno' });
+  }
 }
 
 

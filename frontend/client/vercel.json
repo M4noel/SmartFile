@@ -3,9 +3,9 @@
   "name": "smartfiles",
   "builds": [
     {
-      "src": "frontend/client/package.json",
+      "src": "frontend/package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "frontend/client/dist" }
+      "config": { "distDir": "frontend/dist" }
     },
     {
       "src": "api/**/*.js",
@@ -13,14 +13,8 @@
     }
   ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/frontend/client/dist/index.html"
-    }
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/(.*)", "dest": "/frontend/dist/$1" }
   ],
   "headers": [
     {

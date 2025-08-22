@@ -73,8 +73,9 @@ function setupCORS(req, res, allowedOrigins = '*') {
   }
 
   res.setHeader('Access-Control-Allow-Origin', allowOrigin);
-  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PUT, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, X-Requested-With');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 horas em segundos
 }
 
 function handlePreflight(req, res) {
@@ -99,6 +100,7 @@ function sendJson(res, status, data) {
   res.statusCode = status;
   res.setHeader('Content-Type', 'application/json');
   res.end(JSON.stringify(data));
+  return true;
 }
 
 module.exports = {

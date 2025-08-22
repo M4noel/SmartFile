@@ -6,8 +6,9 @@ import App from './App.vue';
 import axios from 'axios';
 import { createHead } from '@vueuse/head';
 
-// Configure Axios base URL from environment variable
-axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || '';
+// Configure Axios para usar a mesma origem (sem baseURL)
+// As APIs agora estão em /api/* na mesma origem
+axios.defaults.baseURL = '';
 
 // Global Axios error interceptor
 axios.interceptors.response.use(

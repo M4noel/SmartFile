@@ -84,7 +84,7 @@ Acesse: `https://seu-dominio.vercel.app`
 
 - `GET /api/health` - Status da API
 - `GET /api/test` - Teste básico
-- `POST /api/compress-image` - Compressão de imagem
+- `POST /api/compress-image` - Compressão de imagem  
 
 ## 💡 Dicas importantes
 

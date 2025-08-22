@@ -1,7 +1,7 @@
-import { PDFDocument } from 'pdf-lib';
-import { setupCORS, handlePreflight, parseRequestBody, parseMultipart, sendJson } from './utils/multipart.js';
+const { PDFDocument } = require('pdf-lib');
+const { setupCORS, handlePreflight, parseRequestBody, parseMultipart, sendJson } = require('./utils/multipart.js');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Configurar CORS
   setupCORS(req, res, process.env.CORS_ORIGIN?.split(',') || '*');
   

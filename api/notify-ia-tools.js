@@ -1,5 +1,5 @@
-import nodemailer from 'nodemailer';
-import { setupCORS, handlePreflight, parseRequestBody, sendJson } from './utils/multipart.js';
+const nodemailer = require('nodemailer');
+const { setupCORS, handlePreflight, parseRequestBody, sendJson } = require('./utils/multipart.js');
 
 function criarTransporter() {
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
@@ -18,7 +18,7 @@ function criarTransporter() {
   return null;
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Configurar CORS
   setupCORS(req, res, process.env.CORS_ORIGIN?.split(',') || '*');
   

@@ -1,4 +1,4 @@
-export function parseMultipart(buffer, boundary) {
+function parseMultipart(buffer, boundary) {
   const parts = [];
   const boundaryBuffer = Buffer.from(`--${boundary}`);
   const endBoundaryBuffer = Buffer.from(`--${boundary}--`);
@@ -55,7 +55,7 @@ function parsePart(partBuffer) {
   };
 }
 
-export function setupCORS(req, res, allowedOrigins = '*') {
+function setupCORS(req, res, allowedOrigins = '*') {
   const requestOrigin = req.headers.origin;
   let allowOrigin = '*';
 
@@ -77,7 +77,7 @@ export function setupCORS(req, res, allowedOrigins = '*') {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
-export function handlePreflight(req, res) {
+function handlePreflight(req, res) {
   if (req.method === 'OPTIONS') {
     res.statusCode = 200;
     res.end();
@@ -86,7 +86,7 @@ export function handlePreflight(req, res) {
   return false;
 }
 
-export function parseRequestBody(req) {
+function parseRequestBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
     req.on('data', chunk => chunks.push(chunk));
@@ -95,8 +95,16 @@ export function parseRequestBody(req) {
   });
 }
 
-export function sendJson(res, status, data) {
+function sendJson(res, status, data) {
   res.statusCode = status;
   res.setHeader('Content-Type', 'application/json');
   res.end(JSON.stringify(data));
 }
+
+module.exports = {
+  parseMultipart,
+  setupCORS,
+  handlePreflight,
+  parseRequestBody,
+  sendJson
+};

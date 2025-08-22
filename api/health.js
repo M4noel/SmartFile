@@ -1,9 +1,10 @@
-module.exports = async function handler(req, res) {
-  // Configurar CORS básico
+module.exports = function handler(req, res) {
+  // CORS básico
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
-  // Handle preflight request
+  // Handle preflight
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
@@ -15,9 +16,11 @@ module.exports = async function handler(req, res) {
   }
   
   res.json({ 
-    message: 'API funcionando na Vercel!', 
+    status: 'OK',
+    message: 'API funcionando na Vercel! 🚀',
     timestamp: new Date().toISOString(),
     method: req.method,
-    url: req.url
+    url: req.url,
+    environment: process.env.NODE_ENV || 'development'
   });
 }

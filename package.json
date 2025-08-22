@@ -1,7 +1,6 @@
 {
   "name": "smartfiles-root",
   "private": true,
-  "type": "module",
   "dependencies": {
     "@vercel/node": "^5.3.13",
     "archiver": "^5.3.1",

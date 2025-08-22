@@ -1,7 +1,7 @@
-import QRCode from 'qrcode';
-import { setupCORS, handlePreflight, parseRequestBody, sendJson } from './utils/multipart.js';
+const QRCode = require('qrcode');
+const { setupCORS, handlePreflight, parseRequestBody, sendJson } = require('./utils/multipart.js');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Configurar CORS
   setupCORS(req, res, process.env.CORS_ORIGIN?.split(',') || '*');
   

@@ -1,8 +1,8 @@
-import path from 'path';
-import { convertDocument, detectFormat, SUPPORTED_OUTPUT_FORMATS } from '../server/utils/documentConverter.js';
-import { setupCORS, handlePreflight, parseRequestBody, parseMultipart, sendJson } from './utils/multipart.js';
+const path = require('path');
+const { convertDocument, detectFormat, SUPPORTED_OUTPUT_FORMATS } = require('../server/utils/documentConverter.js');
+const { setupCORS, handlePreflight, parseRequestBody, parseMultipart, sendJson } = require('./utils/multipart.js');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   setupCORS(res, process.env.CORS_ORIGIN?.split(',') || '*');
   if (handlePreflight(req, res)) return;
 

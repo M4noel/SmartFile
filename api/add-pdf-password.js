@@ -1,6 +1,6 @@
-import { setupCORS, handlePreflight } from './utils/multipart.js';
+const { setupCORS, handlePreflight } = require('./utils/multipart.js');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Configurar CORS
   setupCORS(res, process.env.CORS_ORIGIN?.split(',') || '*');
   

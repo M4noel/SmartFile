@@ -1,7 +1,7 @@
-import pdfMerge from '../server/utils/pdfMerge.js';
-import { setupCORS, handlePreflight, parseRequestBody, parseMultipart, sendJson } from './utils/multipart.js';
+const pdfMerge = require('../server/utils/pdfMerge.js');
+const { setupCORS, handlePreflight, parseRequestBody, parseMultipart, sendJson } = require('./utils/multipart.js');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   setupCORS(req, res, process.env.CORS_ORIGIN?.split(',') || '*');
   if (handlePreflight(req, res)) return;
 

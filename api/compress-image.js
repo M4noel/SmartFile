@@ -1,7 +1,7 @@
-import sharp from 'sharp';
-import { setupCORS, handlePreflight, parseRequestBody, parseMultipart, sendJson } from './utils/multipart.js';
+const sharp = require('sharp');
+const { setupCORS, handlePreflight, parseRequestBody, parseMultipart, sendJson } = require('./utils/multipart.js');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // CORS
   setupCORS(req, res, process.env.CORS_ORIGIN?.split(',') || '*');
 

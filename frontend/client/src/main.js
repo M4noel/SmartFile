@@ -5,7 +5,7 @@ import './assets/main.css'; // seu CSS personalizado
 
 import { createApp } from 'vue';
 import App from './App.vue';
-import router from './router'; // melhor manter o router em src/router/index.js
+import router from './components/router';
 import axios from 'axios';
 import { createHead } from '@vueuse/head';
 
@@ -44,7 +44,7 @@ axios.interceptors.response.use(
 
     console.error('Erro na requisição:', errorTitle, errorMessage, error);
 
-    return Promise.reject(error); 
+    return Promise.reject(error); // mantém o erro completo para debug
   }
 );
 

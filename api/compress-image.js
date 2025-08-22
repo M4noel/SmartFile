@@ -1,38 +1,33 @@
 const sharp = require('sharp');
-const { setupCORS, handlePreflight, parseRequestBody, parseMultipart, sendJson } = require('./utils/multipart.js');
 
 module.exports = async function handler(req, res) {
-  // CORS
-  setupCORS(req, res, process.env.CORS_ORIGIN?.split(',') || '*');
-
-  // Preflight
-  if (handlePreflight(req, res)) return;
-
+  // CORS básico
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
+  // Verificar método
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
-    return sendJson(res, 405, { error: 'Method Not Allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
-
+  
   try {
-    const buffer = await parseRequestBody(req);
-    const boundary = req.headers['content-type']?.split('boundary=')[1];
-    if (!boundary) return sendJson(res, 400, { error: 'Content-Type boundary not found' });
-
-    const parts = parseMultipart(buffer, boundary);
-    const imagePart = parts.find(part => part.name === 'image');
-    if (!imagePart) return sendJson(res, 400, { error: 'Nenhum arquivo enviado' });
-
-    const quality = parseInt(parts.find(p => p.name === 'quality')?.data?.toString() || '80', 10);
-    const format = parts.find(p => p.name === 'format')?.data?.toString() || 'jpeg';
-
-    const compressed = await sharp(imagePart.data).jpeg({ quality }).toBuffer();
-
-    res.setHeader('Content-Type', `image/${format}`);
-    res.statusCode = 200;
-    res.end(compressed);
-
+    // Para teste, vamos retornar uma resposta simples primeiro
+    res.status(200).json({ 
+      message: 'API compress-image funcionando! 🚀',
+      method: req.method,
+      timestamp: new Date().toISOString()
+    });
+    
   } catch (err) {
-    console.error(err);
-    return sendJson(res, 500, { error: 'Falha ao comprimir imagem' });
+    console.error('Erro:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }

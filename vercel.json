@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "smartfiles",
   "builds": [
     {
       "src": "frontend/client/package.json",
@@ -15,13 +14,7 @@
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1" },
     { "src": "/(.*)", "dest": "/frontend/client/dist/$1" }
-  ],
-  "functions": {
-    "api/**/*.js": { 
-      "runtime": "nodejs18.x",
-      "maxDuration": 30
-    }
-  }
+  ]
 }
 
 

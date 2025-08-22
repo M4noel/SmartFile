@@ -100,3 +100,5 @@ temp/
 
 # Local development
 *.local
+
+.vercel

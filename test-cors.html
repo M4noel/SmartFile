@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de CORS - Vercel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            margin: 8px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        label {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Teste de CORS e Endpoints Vercel</h1>
+    
+    <div class="test-section">
+        <h2>1. Teste do Endpoint de Diagnóstico</h2>
+        <label for="debug-url">URL do Endpoint:</label>
+        <input type="text" id="debug-url" value="https://seu-projeto.vercel.app/api/cors-debug" />
+        
+        <div>
+            <button onclick="testDebugEndpoint('GET')">GET</button>
+            <button onclick="testDebugEndpoint('POST')">POST</button>
+            <button onclick="testDebugEndpoint('OPTIONS')">OPTIONS</button>
+        </div>
+        
+        <h3>Resultado:</h3>
+        <pre id="debug-result">Clique em um botão para testar...</pre>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Teste do Endpoint de Compressão</h2>
+        <label for="compress-url">URL do Endpoint:</label>
+        <input type="text" id="compress-url" value="https://seu-projeto.vercel.app/api/compress-image" />
+        
+        <div>
+            <label for="image-file">Selecione uma imagem:</label>
+            <input type="file" id="image-file" accept="image/*" />
+        </div>
+        
+        <div>
+            <label for="quality">Qualidade (1-100):</label>
+            <input type="text" id="quality" value="80" />
+            
+            <label for="format">Formato:</label>
+            <select id="format">
+                <option value="jpeg">JPEG</option>
+                <option value="png">PNG</option>
+                <option value="webp">WebP</option>
+            </select>
+        </div>
+        
+        <div>
+            <button onclick="testCompressEndpoint()">Testar Compressão</button>
+            <button onclick="testCompressOptions()">Testar OPTIONS</button>
+        </div>
+        
+        <h3>Resultado:</h3>
+        <pre id="compress-result">Clique em um botão para testar...</pre>
+        
+        <div id="image-result" style="display: none;">
+            <h3>Imagem Comprimida:</h3>
+            <img id="compressed-image" style="max-width: 100%;" />
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Informações de Diagnóstico</h2>
+        <button onclick="showDiagnosticInfo()">Mostrar Informações</button>
+        <h3>Informações do Navegador:</h3>
+        <pre id="diagnostic-info">Clique no botão para mostrar...</pre>
+    </div>
+
+    <script>
+        // Função para testar o endpoint de diagnóstico
+        async function testDebugEndpoint(method) {
+            const resultElement = document.getElementById('debug-result');
+            const url = document.getElementById('debug-url').value;
+            
+            resultElement.innerHTML = 'Testando...';
+            resultElement.className = '';
+            
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Test-Header': 'test-value'
+                    },
+                    credentials: 'include'
+                });
+                
+                const responseHeaders = {};
+                response.headers.forEach((value, key) => {
+                    responseHeaders[key] = value;
+                });
+                
+                let responseBody;
+                try {
+                    responseBody = await response.json();
+                } catch (e) {
+                    responseBody = await response.text();
+                }
+                
+                const result = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: responseHeaders,
+                    body: responseBody
+                };
+                
+                resultElement.innerHTML = JSON.stringify(result, null, 2);
+                resultElement.className = 'success';
+            } catch (error) {
+                resultElement.innerHTML = `Erro: ${error.message}`;
+                resultElement.className = 'error';
+            }
+        }
+        
+        // Função para testar o endpoint de compressão
+        async function testCompressEndpoint() {
+            const resultElement = document.getElementById('compress-result');
+            const imageElement = document.getElementById('compressed-image');
+            const imageResultDiv = document.getElementById('image-result');
+            const url = document.getElementById('compress-url').value;
+            const fileInput = document.getElementById('image-file');
+            const quality = document.getElementById('quality').value;
+            const format = document.getElementById('format').value;
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                resultElement.innerHTML = 'Por favor, selecione uma imagem.';
+                resultElement.className = 'error';
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('quality', quality);
+            formData.append('format', format);
+            
+            resultElement.innerHTML = 'Enviando imagem para compressão...';
+            resultElement.className = '';
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                });
+                
+                const responseHeaders = {};
+                response.headers.forEach((value, key) => {
+                    responseHeaders[key] = value;
+                });
+                
+                if (!response.ok) {
+                    let errorText;
+                    try {
+                        const errorJson = await response.json();
+                        errorText = JSON.stringify(errorJson, null, 2);
+                    } catch (e) {
+                        errorText = await response.text();
+                    }
+                    
+                    resultElement.innerHTML = `Erro ${response.status}: ${response.statusText}\n\nHeaders:\n${JSON.stringify(responseHeaders, null, 2)}\n\nCorpo:\n${errorText}`;
+                    resultElement.className = 'error';
+                    imageResultDiv.style.display = 'none';
+                    return;
+                }
+                
+                // Se for uma imagem, exibir
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.startsWith('image/')) {
+                    const blob = await response.blob();
+                    const imageUrl = URL.createObjectURL(blob);
+                    imageElement.src = imageUrl;
+                    imageResultDiv.style.display = 'block';
+                    
+                    resultElement.innerHTML = `Sucesso! Imagem comprimida recebida.\n\nHeaders:\n${JSON.stringify(responseHeaders, null, 2)}`;
+                    resultElement.className = 'success';
+                } else {
+                    // Se não for uma imagem, tentar exibir como texto ou JSON
+                    let responseBody;
+                    try {
+                        responseBody = await response.json();
+                        responseBody = JSON.stringify(responseBody, null, 2);
+                    } catch (e) {
+                        responseBody = await response.text();
+                    }
+                    
+                    resultElement.innerHTML = `Resposta recebida (não é uma imagem):\n\nHeaders:\n${JSON.stringify(responseHeaders, null, 2)}\n\nCorpo:\n${responseBody}`;
+                    resultElement.className = 'success';
+                    imageResultDiv.style.display = 'none';
+                }
+            } catch (error) {
+                resultElement.innerHTML = `Erro: ${error.message}`;
+                resultElement.className = 'error';
+                imageResultDiv.style.display = 'none';
+            }
+        }
+        
+        // Função para testar OPTIONS no endpoint de compressão
+        async function testCompressOptions() {
+            const resultElement = document.getElementById('compress-result');
+            const url = document.getElementById('compress-url').value;
+            
+            resultElement.innerHTML = 'Testando preflight OPTIONS...';
+            resultElement.className = '';
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type'
+                    }
+                });
+                
+                const responseHeaders = {};
+                response.headers.forEach((value, key) => {
+                    responseHeaders[key] = value;
+                });
+                
+                const result = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: responseHeaders
+                };
+                
+                resultElement.innerHTML = JSON.stringify(result, null, 2);
+                resultElement.className = 'success';
+            } catch (error) {
+                resultElement.innerHTML = `Erro: ${error.message}`;
+                resultElement.className = 'error';
+            }
+        }
+        
+        // Função para mostrar informações de diagnóstico
+        function showDiagnosticInfo() {
+            const infoElement = document.getElementById('diagnostic-info');
+            
+            const info = {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                cookiesEnabled: navigator.cookieEnabled,
+                origin: window.location.origin,
+                protocol: window.location.protocol,
+                host: window.location.host,
+                pathname: window.location.pathname,
+                referrer: document.referrer,
+                screenWidth: window.screen.width,
+                screenHeight: window.screen.height,
+                windowWidth: window.innerWidth,
+                windowHeight: window.innerHeight,
+                timestamp: new Date().toISOString()
+            };
+            
+            infoElement.innerHTML = JSON.stringify(info, null, 2);
+        }
+    </script>
+</body>
+</html>

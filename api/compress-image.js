@@ -1,18 +1,18 @@
 const compressImage = require('./utils/imageCompressor.js');
-const { setupCORS, handlePreflight, parseRequestBody, parseMultipart, sendJson } = require('./utils/multipart.js');
+const { parseRequestBody, parseMultipart } = require('./utils/multipart.js');
+const { setupCORS, checkMethod, sendJson } = require('./utils/cors-middleware.js');
 
 module.exports = async function handler(req, res) {
-  // Configurar CORS de forma mais permissiva
-  setupCORS(req, res, process.env.CORS_ORIGIN?.split(',') || '*');
+  // Configurar CORS com o middleware avançado
+  const corsOptions = {
+    origins: process.env.CORS_ORIGIN?.split(',') || '*',
+    methods: 'POST,OPTIONS',
+    credentials: true
+  };
   
-  // Tratar preflight requests (OPTIONS)
-  if (handlePreflight(req, res)) return;
-
-  // Verificar método HTTP - aceitar POST e OPTIONS
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST, OPTIONS');
-    return sendJson(res, 405, { error: 'Method Not Allowed', allowedMethods: ['POST', 'OPTIONS'] });
-  }
+  // Aplicar middleware CORS e verificar método
+  if (setupCORS(req, res, corsOptions)) return;
+  if (checkMethod(req, res, ['POST'])) return;
 
   try {
     const bodyBuffer = await parseRequestBody(req);

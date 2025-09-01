@@ -40,11 +40,11 @@
          <p>Edite seus PDFs com várias ferramentas</p>
        </div>
        
-       <div class="tool-card" @click="navigateTo('/add-pdf-password')">
-         <div class="tool-icon">🔐</div>
-         <h3>Adicionar Senha ao PDF</h3>
-         <p>Proteja seus PDFs aplicando uma senha</p>
-       </div>
+               <div class="tool-card" @click="navigateTo('/compress-pdf')">
+          <div class="tool-icon">📦</div>
+          <h3>Comprimir PDF</h3>
+          <p>Reduza o tamanho dos seus PDFs mantendo a qualidade</p>
+        </div>
     </div>
     
     <div class="feedback-section">

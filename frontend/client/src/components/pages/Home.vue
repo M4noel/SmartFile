@@ -68,9 +68,9 @@
       />
       <ToolCard
         icon="🔐"
-        title="Adicionar Senha ao PDF"
-        description="Proteja seus PDFs aplicando uma senha"
-        to="/add-pdf-password"
+                  title="Comprimir PDF"
+          description="Reduza o tamanho dos seus PDFs mantendo a qualidade"
+        to="/compress-pdf"
         :badges="['50 MB', 'Seguro', 'Rápido']"
       />
        <ToolCard

@@ -18,6 +18,8 @@ import TermosDeUso from '../pages/TermosDeUso.vue';
 import PoliticaPrivacidade from '../pages/PoliticaPrivacidade.vue';
 import Contato from '../pages/Contato.vue';
 import NotFound from '../pages/404.vue';
+import CompressPdf from '../pages/CompressPdf.vue'; 
+
 
 const routes = [
   { path: '/', component: Home },
@@ -31,7 +33,7 @@ const routes = [
   { path: '/pdf-document-converter', component: PdfDocumentConverter },
   { path: '/images-to-pdf', component: ImagesToPdf },
   { path: '/document-converter', component: DocumentConverter },
-  { path: '/add-pdf-password', component: AddPdfPassword },
+  { path: '/compress-pdf', component: CompressPdf },
   { path: '/extras', component: Extras },
   { path: '/qr-code', component: QrCodeGenerator },
   { path: '/ia-tools', component: IaTools },

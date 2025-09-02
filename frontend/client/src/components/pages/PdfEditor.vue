@@ -112,17 +112,45 @@
           <input v-model="watermarkText" placeholder="Digite o texto da marca d'água" />
           
           <label>Ou envie uma imagem para marca d'água:</label>
-          <input type="file" accept="image/*" @change="handleWatermarkImage" />
-          <div v-if="watermarkImagePreview" style="margin-top: 10px;">
-            <strong>Preview da imagem:</strong><br />
-            <img :src="watermarkImagePreview" alt="Preview da marca d'água" style="width: 150px; height: 150px; object-fit: contain;" />
-            <div>
-              <label>Largura da imagem:</label>
-              <input type="number" v-model.number="watermarkImageWidth" min="1" max="1000" />
-              <label>Altura da imagem:</label>
-              <input type="number" v-model.number="watermarkImageHeight" min="1" max="1000" />
+          <div class="watermark-image-upload">
+            <div 
+              class="drop-zone" 
+              @dragover.prevent="watermarkDragover = true" 
+              @dragleave="watermarkDragover = false"
+              @drop.prevent="handleWatermarkDrop"
+              :class="{ 'drag-over': watermarkDragover }"
+            >
+              <input 
+                type="file" 
+                ref="watermarkFileInput"
+                accept="image/*" 
+                @change="handleWatermarkImage" 
+                style="display: none;"
+              />
+              <div v-if="!watermarkImagePreview" class="drop-zone-content" @click="openWatermarkFilePicker">
+                <div class="placeholder-icon">🖼️</div>
+                <p>Arraste e solte uma imagem aqui</p>
+                <p>ou</p>
+                <button class="browse-btn">Selecionar Imagem</button>
+                <p class="placeholder-subtext">Formatos suportados: JPG, PNG, WEBP</p>
+              </div>
+              <div v-else class="watermark-preview-container">
+                <img :src="watermarkImagePreview" alt="Preview da marca d'água" class="watermark-preview-image" />
+                <div class="watermark-image-controls">
+                  <div class="watermark-size-controls">
+                    <div class="control-group">
+                      <label>Largura:</label>
+                      <input type="number" v-model.number="watermarkImageWidth" min="1" max="1000" />
+                    </div>
+                    <div class="control-group">
+                      <label>Altura:</label>
+                      <input type="number" v-model.number="watermarkImageHeight" min="1" max="1000" />
+                    </div>
+                  </div>
+                  <button class="remove-btn" @click="removeWatermarkImage">Remover imagem</button>
+                </div>
+              </div>
             </div>
-            <button @click="removeWatermarkImage">Remover imagem</button>
           </div>
 
           <label>Opacidade:</label>
@@ -360,6 +388,13 @@ function parsePageRanges(input) {
 }
 
 // Marca d'água: lidar com imagem
+const watermarkDragover = ref(false);
+const watermarkFileInput = ref(null);
+
+function openWatermarkFilePicker() {
+  watermarkFileInput.value.click();
+}
+
 function handleWatermarkImage(event) {
   const selectedFile = event.target.files[0];
   if (!selectedFile) return;
@@ -370,6 +405,19 @@ function handleWatermarkImage(event) {
     watermarkImagePreview.value = e.target.result;
   };
   reader.readAsDataURL(selectedFile);
+}
+
+function handleWatermarkDrop(event) {
+  watermarkDragover.value = false;
+  const file = event.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    watermarkImageFile.value = file;
+    const reader = new FileReader();
+    reader.onload = e => {
+      watermarkImagePreview.value = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
 }
 
 function removeWatermarkImage() {
@@ -613,6 +661,129 @@ onBeforeUnmount(() => {
   margin: 0 auto;
   padding: 2rem;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.watermark-image-upload {
+  margin: 1rem 0;
+}
+
+.watermark-image-upload .drop-zone {
+  border: 2px dashed #ccc;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s;
+  cursor: pointer;
+  background: #f8f9fa;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.watermark-image-upload .drop-zone.drag-over {
+  border-color: #2a75ff;
+  background-color: #e7f3ff;
+  transform: scale(1.02);
+}
+
+.watermark-image-upload .drop-zone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.watermark-image-upload .placeholder-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #9e9e9e;
+}
+
+.watermark-image-upload .placeholder-subtext {
+  color: #999;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.watermark-image-upload .browse-btn {
+  padding: 0.85rem 1.75rem;
+  background: linear-gradient(135deg, #2a75ff, #1a65e0);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin: 1rem 0;
+  transition: all 0.3s;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(42, 117, 255, 0.3);
+}
+
+.watermark-image-upload .browse-btn:hover {
+  background: linear-gradient(135deg, #1a65e0, #0a55d0);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(42, 117, 255, 0.4);
+}
+
+.watermark-preview-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.watermark-preview-image {
+  max-width: 200px;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.watermark-image-controls {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.watermark-size-controls {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.control-group label {
+  font-weight: 600;
+  color: #444;
+}
+
+.control-group input {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  width: 100px;
+}
+
+.remove-btn {
+  padding: 0.5rem 1rem;
+  background: #ff6b6b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s;
+  align-self: center;
+}
+
+.remove-btn:hover {
+  background: #ff5252;
+  transform: translateY(-2px);
 }
 
 .subtitle {

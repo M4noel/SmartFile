@@ -14,37 +14,31 @@
 import { ref, onMounted, computed } from 'vue';
 
 const props = defineProps({
-  size: { type: String, default: 'auto' },        // "728x90", "300x250" ou "auto"
-  adSlot: { type: String, required: true }       // coloque o seu slot aqui, ex: "1098157652"
+  size: { type: String, default: 'auto' }, // 'auto' ou '728x90', '300x250' etc.
+  adSlot: { type: String, required: true } // coloque aqui seu slot do AdSense
 });
 
 const adContainer = ref(null);
-
-// Coloque seu ID do publisher aqui
 const adClient = computed(() => 'ca-pub-5604948783210108');
-
-// Formato do anúncio
 const adFormat = computed(() => props.size === 'auto' ? 'auto' : undefined);
 
-// Estilo do container
 const containerStyle = computed(() => {
   if (props.size === 'auto') return { width: '100%', height: 'auto' };
   const parts = props.size.split('x');
-  return { width: parts[0] + 'px', height: parts[1] + 'px' };
+  return { width: parts[0] + 'px', height: parts[1] + 'px', margin: '0 auto' };
 });
 
 onMounted(() => {
   const initAd = () => {
-    if (!adContainer.value) return;
-    const width = adContainer.value.offsetWidth;
-    if (width > 0) {
-      try {
-        (adsbygoogle = window.adsbygoogle || []).push({});
-      } catch (e) {
-        console.error('Erro ao carregar anúncio:', e);
-      }
-    } else {
-      setTimeout(initAd, 200); // tenta novamente até carregar
+    if (!window.adsbygoogle) {
+      // espera 200ms e tenta de novo até o script carregar
+      setTimeout(initAd, 200);
+      return;
+    }
+    try {
+      (adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (e) {
+      console.error('Erro ao carregar anúncio:', e);
     }
   };
   initAd();
@@ -56,6 +50,6 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 1rem auto;
+  margin: 1rem 0;
 }
 </style>

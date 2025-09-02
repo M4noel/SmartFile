@@ -50,7 +50,7 @@
 
     <!-- Espaço para anúncios no topo -->
     <div class="top-ad">
-    <AdBanner size="728x90" ad-slot="1098157652" />
+    <AdBanner ad-client="ca-pub-5604948783210108" ad-slot="1098157652" width="728px" height="90px" />
     </div>
 
     <!-- Conteúdo principal -->

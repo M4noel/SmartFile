@@ -50,7 +50,7 @@
 
     <!-- Espaço para anúncios no topo -->
     <div class="top-ad">
-    <AdBanner size="728x90" adSlot="1098157652" mode="prod" /> 
+    <AdBanner size="728x90" ad-slot="1098157652" />
     </div>
 
     <!-- Conteúdo principal -->

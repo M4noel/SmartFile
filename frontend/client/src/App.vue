@@ -49,15 +49,18 @@
     </header>
 
     <!-- Espaço para anúncios no topo -->
-    <div class="top-ad">
-    <AdBanner ad-client="ca-pub-5604948783210108" ad-slot="1098157652" width="728px" height="90px" />
-    </div>
+    
 
     <!-- Conteúdo principal -->
     <main class="main-content">
       <router-view />
     </main>
 
+
+    <div class="top-ad">
+    <AdBanner ad-client="ca-pub-5604948783210108" ad-slot="1098157652" width="728px" height="90px" />
+    </div>
+    
     <!-- Footer Profissional -->
     <footer class="footer">
       <div class="footer-container">

@@ -10,11 +10,11 @@
 </template>
 
 <script setup>
-import { onMounted, computed } from 'vue';
+import { onMounted } from 'vue';
 
 const props = defineProps({
-  size: { type: String, default: '300x250' },
-  adSlot: { type: String, required: true } // Cada anúncio terá seu ID do AdSense
+  size: { type: String, default: '300x250' },  // Tamanho do anúncio, ex: "728x90"
+  adSlot: { type: String, required: true }     // ID do anúncio do AdSense
 });
 
 const adClient = 'ca-pub-5604948783210108'; // Seu ID do AdSense
@@ -24,18 +24,27 @@ const sizeWidth = sizeParts[0] + 'px';
 const sizeHeight = sizeParts[1] + 'px';
 
 onMounted(() => {
-  try {
-    (adsbygoogle = window.adsbygoogle || []).push({});
-  } catch (e) {
-    console.error('Erro ao carregar AdSense:', e);
-  }
+  const initAds = () => {
+    if (window.adsbygoogle) {
+      try {
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      } catch (e) {
+        console.error('Erro ao carregar AdSense:', e);
+      }
+    } else {
+      // Tenta novamente em 500ms se o script ainda não carregou
+      setTimeout(initAds, 500);
+    }
+  };
+
+  initAds();
 });
 </script>
 
 <style scoped>
 .ad-banner {
   display: flex;
-  justify-content: center;
-  margin: 1rem auto;
+  justify-content: center; /* centraliza horizontalmente */
+  margin: 1rem auto;      /* espaço acima e abaixo */
 }
 </style>

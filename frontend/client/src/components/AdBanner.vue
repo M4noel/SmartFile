@@ -1,55 +1,62 @@
 <template>
-  <div class="ad-banner" ref="adContainer" :style="containerStyle">
+  <div class="ad-banner">
     <ins class="adsbygoogle"
-         :style="{ display: 'block' }"
+         :style="adStyle"
          :data-ad-client="adClient"
          :data-ad-slot="adSlot"
-         :data-ad-format="adFormat"
-         data-full-width-responsive="true">
-    </ins>
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 
 const props = defineProps({
-  size: { type: String, default: 'auto' }, // 'auto' ou '728x90', '300x250' etc.
-  adSlot: { type: String, required: true } // coloque aqui seu slot do AdSense
+  adClient: {
+    type: String,
+    default: 'ca-pub-5604948783210108' // substitua pelo seu ID do publisher
+  },
+  adSlot: {
+    type: String,
+    default: '1098157652' // substitua pelo seu ID do anúncio
+  },
+  width: {
+    type: [String, Number],
+    default: '100%' // pode passar número em px ou % para responsivo
+  },
+  height: {
+    type: [String, Number],
+    default: 'auto' // altura automática
+  }
 });
 
-const adContainer = ref(null);
-const adClient = computed(() => 'ca-pub-5604948783210108');
-const adFormat = computed(() => props.size === 'auto' ? 'auto' : undefined);
-
-const containerStyle = computed(() => {
-  if (props.size === 'auto') return { width: '100%', height: 'auto' };
-  const parts = props.size.split('x');
-  return { width: parts[0] + 'px', height: parts[1] + 'px', margin: '0 auto' };
-});
+// Computa o style do ins
+const adStyle = ref(`display:block;width:${props.width};height:${props.height}`);
 
 onMounted(() => {
-  const initAd = () => {
-    if (!window.adsbygoogle) {
-      // espera 200ms e tenta de novo até o script carregar
-      setTimeout(initAd, 200);
-      return;
-    }
-    try {
-      (adsbygoogle = window.adsbygoogle || []).push({});
-    } catch (e) {
-      console.error('Erro ao carregar anúncio:', e);
-    }
-  };
-  initAd();
+  try {
+    // Garante que o AdSense seja carregado quando o componente montar
+    (adsbygoogle = window.adsbygoogle || []).push({});
+  } catch (e) {
+    console.error('Erro ao carregar AdSense:', e);
+  }
+});
+
+// Recarrega o anúncio se as props width ou height mudarem
+watch([() => props.width, () => props.height], () => {
+  adStyle.value = `display:block;width:${props.width};height:${props.height}`;
+  try {
+    (adsbygoogle = window.adsbygoogle || []).push({});
+  } catch (e) {
+    console.error('Erro ao atualizar AdSense:', e);
+  }
 });
 </script>
 
 <style scoped>
 .ad-banner {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 1rem 0;
+  margin: 1rem auto;
+  text-align: center;
 }
 </style>

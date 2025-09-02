@@ -11,29 +11,22 @@
 </template>
 
 <script setup>
-import { onMounted, ref, watch, computed } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 
 const props = defineProps({
-  size: { type: String, default: 'auto' },        // ex: "728x90", "300x250" ou "auto"
-  adSlot: { type: String, default: '1098157652' }, // seu slot real
-  mode: { type: String, default: 'prod' }         // 'prod' ou 'test'
+  size: { type: String, default: 'auto' },        // "728x90", "300x250" ou "auto"
+  adSlot: { type: String, required: true }       // coloque o seu slot aqui, ex: "1098157652"
 });
 
 const adContainer = ref(null);
 
-const adClient = computed(() => {
-  // Se for modo teste, usar ID de teste do Google
-  return props.mode === 'test'
-    ? 'ca-pub-3940256099942544'
-    : 'ca-pub-5604948783210108'; // substitua pelo seu ID real
-});
+// Coloque seu ID do publisher aqui
+const adClient = computed(() => 'ca-pub-5604948783210108');
 
-// Determina formato do anúncio
-const adFormat = computed(() => {
-  return props.size === 'auto' ? 'auto' : undefined;
-});
+// Formato do anúncio
+const adFormat = computed(() => props.size === 'auto' ? 'auto' : undefined);
 
-// Determina tamanho do container
+// Estilo do container
 const containerStyle = computed(() => {
   if (props.size === 'auto') return { width: '100%', height: 'auto' };
   const parts = props.size.split('x');
@@ -41,7 +34,6 @@ const containerStyle = computed(() => {
 });
 
 onMounted(() => {
-  // Garante que o container tenha largura antes de inicializar
   const initAd = () => {
     if (!adContainer.value) return;
     const width = adContainer.value.offsetWidth;
@@ -52,11 +44,9 @@ onMounted(() => {
         console.error('Erro ao carregar anúncio:', e);
       }
     } else {
-      // Tenta novamente em 200ms se ainda não tem largura
-      setTimeout(initAd, 200);
+      setTimeout(initAd, 200); // tenta novamente até carregar
     }
   };
-
   initAd();
 });
 </script>

@@ -50,7 +50,7 @@
 
     <!-- Espaço para anúncios no topo -->
     <div class="top-ad">
-      <AdBanner responsive ad-slot="0987654321" />
+    <AdBanner size="728x90" adSlot="1098157652" mode="prod" /> 
     </div>
 
     <!-- Conteúdo principal -->

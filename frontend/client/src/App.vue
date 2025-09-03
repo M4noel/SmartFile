@@ -281,7 +281,7 @@ onMounted(() => {
   text-decoration: none;
   font-weight: 500;
   font-size: 0.9rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 9px;
   border-radius: 6px;
   transition: all 0.3s ease;
   white-space: nowrap;

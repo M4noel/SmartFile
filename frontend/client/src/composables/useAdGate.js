@@ -13,13 +13,17 @@ const AD_GATE_CONFIG = {
   UNLOCK_DURATION: 10 * 60 * 1000, // 10 minutos em ms
   MAX_SESSION_CLICKS: 3, // Máximo de cliques por sessão
   COOLDOWN_BETWEEN_CLICKS: 2 * 60 * 1000, // 2 minutos entre cliques
-  STORAGE_KEY: 'smartfile_ad_gate'
+  COUNTDOWN_TIME: 10, // Segundos de countdown após clicar
+  STORAGE_KEY: 'smartfile_ad_gate',
+  PENDING_DOWNLOAD_KEY: 'smartfile_pending_download'
 }
 
 export function useAdGate() {
   const showModal = ref(false)
   const currentFileName = ref('')
   const pendingDownload = ref(null)
+  const modalState = ref('waiting') // 'waiting', 'clicked', 'ready'
+  const awaitingReturn = ref(false)
 
   // Carregar estado do localStorage
   const loadState = () => {
@@ -38,6 +42,29 @@ export function useAdGate() {
           // Expirou, limpar estado
           clearState()
         }
+        
+        // Restaurar estado do modal se estava aguardando retorno
+        if (data.awaitingReturn && data.modalOpen) {
+          showModal.value = true
+          modalState.value = data.modalState || 'waiting'
+          currentFileName.value = data.fileName || ''
+          awaitingReturn.value = true
+          console.log('Estado do modal restaurado após retorno do usuário')
+        }
+      }
+      
+      // Verificar se existe download pendente
+      const pendingDownload = loadPendingDownload()
+      if (pendingDownload && canDownload()) {
+        // Usuário voltou e já pode fazer download!
+        console.log('Download pendente encontrado e liberado:', pendingDownload.fileName)
+        showPendingDownloadNotification(pendingDownload.fileName)
+        clearPendingDownload()
+      } else if (pendingDownload) {
+        // Ainda precisa clicar no anúncio
+        console.log('Download pendente encontrado, mas ainda precisa clicar no anúncio')
+        currentFileName.value = pendingDownload.fileName
+        showModal.value = true
       }
     } catch (error) {
       console.warn('Erro ao carregar estado do AdGate:', error)
@@ -52,7 +79,12 @@ export function useAdGate() {
         isUnlocked: adGateState.isUnlocked,
         lastAdClick: adGateState.lastAdClick?.toISOString(),
         unlockExpiry: adGateState.unlockExpiry?.toISOString(),
-        sessionClicks: adGateState.sessionClicks
+        sessionClicks: adGateState.sessionClicks,
+        // Salvar estado do modal também
+        modalOpen: showModal.value,
+        modalState: modalState.value,
+        fileName: currentFileName.value,
+        awaitingReturn: awaitingReturn.value
       }
       localStorage.setItem(AD_GATE_CONFIG.STORAGE_KEY, JSON.stringify(data))
     } catch (error) {
@@ -120,6 +152,10 @@ export function useAdGate() {
     adGateState.unlockExpiry = new Date(now.getTime() + AD_GATE_CONFIG.UNLOCK_DURATION)
     adGateState.isUnlocked = true
     adGateState.sessionClicks++
+    modalState.value = 'clicked'
+    
+    // Marcar que estamos aguardando o usuário voltar (caso abra nova aba)
+    awaitingReturn.value = true
     
     saveState()
     
@@ -127,6 +163,50 @@ export function useAdGate() {
     return true
   }
 
+  // Salvar download pendente no localStorage (para persistir mesmo se sair da página)
+  const savePendingDownload = (fileName) => {
+    try {
+      const pendingData = {
+        fileName,
+        timestamp: new Date().toISOString(),
+        url: window.location.href
+      }
+      localStorage.setItem(AD_GATE_CONFIG.PENDING_DOWNLOAD_KEY, JSON.stringify(pendingData))
+    } catch (error) {
+      console.warn('Erro ao salvar download pendente:', error)
+    }
+  }
+  
+  // Carregar download pendente
+  const loadPendingDownload = () => {
+    try {
+      const saved = localStorage.getItem(AD_GATE_CONFIG.PENDING_DOWNLOAD_KEY)
+      if (saved) {
+        const data = JSON.parse(saved)
+        // Verificar se não é muito antigo (máximo 1 hora)
+        const age = new Date() - new Date(data.timestamp)
+        if (age < 60 * 60 * 1000) { // 1 hora
+          return data
+        } else {
+          localStorage.removeItem(AD_GATE_CONFIG.PENDING_DOWNLOAD_KEY)
+        }
+      }
+    } catch (error) {
+      console.warn('Erro ao carregar download pendente:', error)
+      localStorage.removeItem(AD_GATE_CONFIG.PENDING_DOWNLOAD_KEY)
+    }
+    return null
+  }
+  
+  // Limpar download pendente
+  const clearPendingDownload = () => {
+    try {
+      localStorage.removeItem(AD_GATE_CONFIG.PENDING_DOWNLOAD_KEY)
+    } catch (error) {
+      console.warn('Erro ao limpar download pendente:', error)
+    }
+  }
+  
   // Iniciar processo de download protegido
   const requestDownload = (fileName, downloadFunction) => {
     currentFileName.value = fileName
@@ -134,16 +214,57 @@ export function useAdGate() {
     if (canDownload()) {
       // Download já está liberado, executar imediatamente
       console.log('Download já liberado, executando:', fileName)
+      clearPendingDownload()
       return downloadFunction()
     }
+    
+    // Salvar o download pendente
+    savePendingDownload(fileName)
     
     // Precisa mostrar o modal
     pendingDownload.value = downloadFunction
     showModal.value = true
+    modalState.value = 'waiting'
+    awaitingReturn.value = false
     
+    saveState() // Salvar estado imediatamente
     console.log('Mostrando modal para liberar download:', fileName)
   }
 
+  // Mostrar notificação de download pendente
+  const showPendingDownloadNotification = (fileName) => {
+    // Criar uma notificação visual simples
+    const notification = document.createElement('div')
+    notification.innerHTML = `
+      <div style="
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 10001;
+        font-family: Arial, sans-serif;
+        max-width: 300px;
+      ">
+        🎉 <strong>Download Liberado!</strong><br>
+        <small>Seu arquivo ${fileName} está pronto para download!</small>
+      </div>
+    `
+    
+    document.body.appendChild(notification.firstElementChild)
+    
+    // Remover após 5 segundos
+    setTimeout(() => {
+      const element = document.querySelector('div[style*="position: fixed"]')
+      if (element) {
+        element.remove()
+      }
+    }, 5000)
+  }
+  
   // Aprovar download após clique no anúncio
   const approveDownload = () => {
     if (pendingDownload.value && canDownload()) {
@@ -153,10 +274,23 @@ export function useAdGate() {
       showModal.value = false
       pendingDownload.value = null
       currentFileName.value = ''
+      clearPendingDownload()
       
       // Executar download
       console.log('Download aprovado e executando')
       return downloadFn()
+    }
+    
+    // Verificar se existe um download pendente no localStorage
+    const pendingData = loadPendingDownload()
+    if (pendingData && canDownload()) {
+      console.log('Executando download pendente do localStorage:', pendingData.fileName)
+      clearPendingDownload()
+      showModal.value = false
+      
+      // Como não temos a função original, mostrar notificação
+      showPendingDownloadNotification(pendingData.fileName)
+      return
     }
     
     console.warn('Tentativa de aprovar download sem permissão')
@@ -167,6 +301,10 @@ export function useAdGate() {
     showModal.value = false
     pendingDownload.value = null
     currentFileName.value = ''
+    modalState.value = 'waiting'
+    awaitingReturn.value = false
+    clearPendingDownload() // Limpar download pendente
+    saveState() // Salvar estado ao cancelar
     console.log('Modal de download cancelado')
   }
 
@@ -209,13 +347,51 @@ export function useAdGate() {
     }
   }
 
+  // Configurar detecção de foco da aba
+  const setupFocusDetection = () => {
+    // Detectar quando o usuário volta para a aba
+    const handleVisibilityChange = () => {
+      if (!document.hidden && awaitingReturn.value) {
+        console.log('Usuário voltou para a aba')
+        awaitingReturn.value = false
+        
+        // Se o download já foi liberado, mostrar o modal pronto
+        if (canDownload() && showModal.value) {
+          modalState.value = 'ready'
+          saveState()
+        }
+      }
+    }
+    
+    // Detectar quando o usuário sai da aba (clicou no anúncio)
+    const handleBlur = () => {
+      if (showModal.value && modalState.value === 'clicked') {
+        console.log('Usuário saiu da aba (possivelmente clicou no anúncio)')
+        awaitingReturn.value = true
+        saveState()
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('blur', handleBlur)
+    
+    // Cleanup
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('blur', handleBlur)
+    }
+  }
+  
   // Inicializar ao usar o composable
   loadState()
+  const cleanupFocusDetection = setupFocusDetection()
 
   return {
     // Estado reativo
     showModal,
     currentFileName,
+    modalState,
+    awaitingReturn,
     
     // Métodos principais
     canDownload,
@@ -232,6 +408,9 @@ export function useAdGate() {
     // Debug (apenas desenvolvimento)
     forceUnlock,
     debugClear,
+    
+    // Cleanup
+    cleanup: cleanupFocusDetection,
     
     // Configurações (readonly)
     config: { ...AD_GATE_CONFIG }

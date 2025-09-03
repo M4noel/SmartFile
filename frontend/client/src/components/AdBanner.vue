@@ -34,8 +34,9 @@ let adLoadTimeout = null
 const handleAdAreaClick = (event) => {
   if (!clickDetectionActive) return
   
-  // Registrar clique no anúncio
+  // Registrar clique no anúncio (SEM MODIFICAR O COMPORTAMENTO DO ADSENSE)
   console.log('Clique detectado na área do anúncio')
+  
   emit('ad-clicked', { 
     timestamp: new Date(),
     event: event

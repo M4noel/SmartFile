@@ -354,7 +354,7 @@ useHead({
     { name: 'description', content: 'Rotacione, divida, extraia páginas, adicione marca d’água e mais. Editor de PDF online gratuito.' }
   ],
   link: [
-    { rel: 'canonical', href: 'https://www.smartfiles.app/pdf-editor' }
+    { rel: 'canonical', href: 'https://smart-file-eta.vercel.app/pdf-editor' }
   ]
 });
 

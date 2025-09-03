@@ -122,7 +122,7 @@ useHead({
     { property: 'og:type', content: 'website' }
   ],
   link: [
-    { rel: 'canonical', href: 'https://www.smartfiles.app/' }
+    { rel: 'canonical', href: 'https://smart-file-eta.vercel.app/' }
   ]
 });
 </script>

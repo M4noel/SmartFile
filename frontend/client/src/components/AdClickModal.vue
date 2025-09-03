@@ -23,8 +23,17 @@
             :ad-client="adClient" 
             :ad-slot="adSlot" 
             @ad-clicked="handleAdClick"
+            :track-clicks="true"
             class="modal-ad"
           />
+          
+          <!-- Aviso sobre comportamento normal do AdSense -->
+          <div class="adsense-notice" v-if="!adClicked">
+            <p class="notice-text">
+              💡 <strong>Importante:</strong> Clique no anúncio acima para apoiar o site.
+              <br><small>Aguarde alguns segundos após clicar para liberar seu download.</small>
+            </p>
+          </div>
         </div>
 
         <div class="progress-section" v-if="adClicked">
@@ -124,8 +133,10 @@ const handleAdClick = () => {
   
   adClicked.value = true
   timeLeft.value = props.waitTime
-  emit('ad-clicked')
   
+  console.log('Anúncio clicado - iniciando countdown')
+  
+  emit('ad-clicked')
   startCountdown()
 }
 
@@ -177,6 +188,9 @@ const resetModal = () => {
 watch(() => props.show, (newValue) => {
   if (!newValue) {
     resetModal()
+  } else if (newValue) {
+    // Modal foi aberto - verificar se já teve clique anterior
+    console.log('Modal aberto')
   }
 })
 
@@ -315,6 +329,30 @@ onUnmounted(() => {
 
 .modal-ad {
   width: 100%;
+}
+
+.adsense-notice {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  border-radius: 4px;
+}
+
+.notice-text {
+  margin: 0;
+  color: #856404;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.notice-text strong {
+  color: #533f03;
+}
+
+.notice-text small {
+  color: #6c757d;
+  font-style: italic;
 }
 
 .progress-section {

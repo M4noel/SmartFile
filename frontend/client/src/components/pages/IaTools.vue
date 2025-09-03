@@ -198,9 +198,16 @@ const subscribeNotification = () => {
   if (emailNotification.value && emailNotification.value.includes('@')) {
     submitting.value = true;
     
-    axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/notify-ia-tools`, {
-      email: emailNotification.value,
-      feature: popupTitle.value || 'IA Tools'
+    // Criar FormData para envio correto
+    const formData = new URLSearchParams()
+    formData.append('email', emailNotification.value)
+    formData.append('feature', popupTitle.value || 'IA Tools')
+    
+    // Usar URL relativa que funciona tanto em dev quanto em produção
+    axios.post('/api/notify-ia-tools', formData, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
     })
     .then(() => {
       showNotification.success(

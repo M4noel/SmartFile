@@ -128,38 +128,20 @@ export function useAdGate() {
     return !canDownload()
   }
 
-  // Processar clique no anúncio
-  const handleAdClick = () => {
+  // Aprovar download após timer (substitui o clique no anúncio)
+  const approveAfterTimer = () => {
     const now = new Date()
     
-    // Verificar cooldown entre cliques
-    if (adGateState.lastAdClick) {
-      const timeSinceLastClick = now - adGateState.lastAdClick
-      if (timeSinceLastClick < AD_GATE_CONFIG.COOLDOWN_BETWEEN_CLICKS) {
-        console.warn('Cooldown ativo, clique ignorado')
-        return false
-      }
-    }
-    
-    // Verificar limite de cliques por sessão
-    if (adGateState.sessionClicks >= AD_GATE_CONFIG.MAX_SESSION_CLICKS) {
-      console.warn('Limite de cliques por sessão atingido')
-      return false
-    }
-    
-    // Registrar o clique
+    // Registrar a aprovação
     adGateState.lastAdClick = now
     adGateState.unlockExpiry = new Date(now.getTime() + AD_GATE_CONFIG.UNLOCK_DURATION)
     adGateState.isUnlocked = true
     adGateState.sessionClicks++
-    modalState.value = 'clicked'
-    
-    // Marcar que estamos aguardando o usuário voltar (caso abra nova aba)
-    awaitingReturn.value = true
+    modalState.value = 'approved'
     
     saveState()
     
-    console.log('Clique no anúncio processado, download liberado por', AD_GATE_CONFIG.UNLOCK_DURATION / 60000, 'minutos')
+    console.log('Download aprovado após timer, downloads liberados por', AD_GATE_CONFIG.UNLOCK_DURATION / 60000, 'minutos')
     return true
   }
 
@@ -265,35 +247,31 @@ export function useAdGate() {
     }, 5000)
   }
   
-  // Aprovar download após clique no anúncio
+  // Aprovar download após timer
   const approveDownload = () => {
+    // Primeiro, aprovar o acesso
+    approveAfterTimer()
+    
     if (pendingDownload.value && canDownload()) {
       const downloadFn = pendingDownload.value
       
-      // Limpar estado do modal
+      // Fechar modal IMEDIATAMENTE
       showModal.value = false
+      
+      console.log('Download aprovado - executando imediatamente')
+      
+      // Executar download imediatamente
+      const result = downloadFn()
+      
+      // Limpar estado após executar
       pendingDownload.value = null
       currentFileName.value = ''
       clearPendingDownload()
       
-      // Executar download
-      console.log('Download aprovado e executando')
-      return downloadFn()
+      return result
     }
     
-    // Verificar se existe um download pendente no localStorage
-    const pendingData = loadPendingDownload()
-    if (pendingData && canDownload()) {
-      console.log('Executando download pendente do localStorage:', pendingData.fileName)
-      clearPendingDownload()
-      showModal.value = false
-      
-      // Como não temos a função original, mostrar notificação
-      showPendingDownloadNotification(pendingData.fileName)
-      return
-    }
-    
-    console.warn('Tentativa de aprovar download sem permissão')
+    console.warn('Erro ao aprovar download')
   }
 
   // Cancelar modal
@@ -397,7 +375,6 @@ export function useAdGate() {
     canDownload,
     needsAdClick,
     requestDownload,
-    handleAdClick,
     approveDownload,
     cancelModal,
     

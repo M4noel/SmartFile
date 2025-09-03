@@ -8,13 +8,12 @@
       
       <div class="ad-modal-body">
         <div class="ad-instruction">
-          <div class="instruction-icon">📢</div>
+          <div class="instruction-icon">🕒</div>
           <p class="instruction-text">
-            Para continuar com seu download <strong>{{ fileName }}</strong>, 
-            clique no anúncio abaixo e depois no botão "Liberar Download".
+            Aguarde <strong>{{ timeLeft }} segundos</strong> para baixar <strong>{{ fileName }}</strong>.
           </p>
           <p class="support-text">
-            Isso nos ajuda a manter o site gratuito para todos! 🙏
+            Enquanto isso, que tal dar uma olhada no anúncio abaixo? Isso nos ajuda a manter o site gratuito! 🙏
           </p>
         </div>
 
@@ -22,24 +21,21 @@
           <AdBanner 
             :ad-client="adClient" 
             :ad-slot="adSlot" 
-            @ad-clicked="handleAdClick"
-            :track-clicks="true"
             class="modal-ad"
           />
           
-          <!-- Aviso sobre comportamento normal do AdSense -->
-          <div class="adsense-notice" v-if="!adClicked">
-            <p class="notice-text">
-              💡 <strong>Importante:</strong> Clique no anúncio acima para apoiar o site.
-              <br><small>Aguarde alguns segundos após clicar para liberar seu download.</small>
+          <!-- Informação sobre o anúncio -->
+          <div class="ad-info-notice">
+            <p class="info-text">
+              💡 <strong>Apoie nosso site:</strong> Os anúncios nos ajudam a manter o SmartFile gratuito para todos!
             </p>
           </div>
         </div>
 
-        <div class="progress-section" v-if="adClicked">
-          <div class="success-message">
-            <span class="success-icon">✅</span>
-            Obrigado! Seu download será liberado em {{ timeLeft }} segundos...
+        <div class="progress-section">
+          <div class="countdown-message" :class="{ 'ready': timeLeft <= 0 }">
+            <span class="countdown-icon">{{ timeLeft <= 0 ? '✅' : '⏳' }}</span>
+            {{ timeLeft <= 0 ? 'Download liberado!' : `Aguarde ${timeLeft} segundos...` }}
           </div>
           <div class="progress-bar">
             <div class="progress-fill" :style="{ width: progressWidth + '%' }"></div>
@@ -48,15 +44,7 @@
 
         <div class="modal-actions">
           <button 
-            v-if="!adClicked"
-            class="action-btn wait-btn"
-            disabled
-          >
-            ⏳ Aguardando clique no anúncio...
-          </button>
-          
-          <button 
-            v-else-if="timeLeft > 0"
+            v-if="timeLeft > 0"
             class="action-btn countdown-btn"
             disabled
           >
@@ -70,7 +58,7 @@
             :disabled="isProcessing"
           >
             <span v-if="isProcessing" class="spinner"></span>
-            {{ isProcessing ? 'Processando...' : '🚀 Liberar Download!' }}
+            {{ isProcessing ? 'Processando...' : '🚀 Baixar Agora!' }}
           </button>
         </div>
       </div>
@@ -116,27 +104,22 @@ const props = defineProps({
 const emit = defineEmits(['close', 'download-approved', 'ad-clicked'])
 
 // Estados reativo
-const adClicked = ref(false)
 const timeLeft = ref(props.waitTime)
 const isProcessing = ref(false)
 let countdownInterval = null
 
 // Computed
 const progressWidth = computed(() => {
-  if (!adClicked.value) return 0
   return ((props.waitTime - timeLeft.value) / props.waitTime) * 100
 })
 
 // Métodos
-const handleAdClick = () => {
-  if (adClicked.value) return
+const startTimer = () => {
+  if (countdownInterval) return // Já está rodando
   
-  adClicked.value = true
   timeLeft.value = props.waitTime
+  console.log('Iniciando timer de', props.waitTime, 'segundos')
   
-  console.log('Anúncio clicado - iniciando countdown')
-  
-  emit('ad-clicked')
   startCountdown()
 }
 
@@ -151,15 +134,15 @@ const startCountdown = () => {
 }
 
 const proceedWithDownload = () => {
-  if (timeLeft.value > 0 || !adClicked.value) return
+  if (timeLeft.value > 0) return
   
-  isProcessing.value = true
+  // Fechar modal imediatamente
+  emit('download-approved')
   
-  // Simula um pequeno delay para dar feedback visual
+  // Resetar modal após fechar
   setTimeout(() => {
-    emit('download-approved')
     resetModal()
-  }, 1000)
+  }, 100)
 }
 
 const closeModal = () => {
@@ -174,7 +157,6 @@ const handleOverlayClick = () => {
 }
 
 const resetModal = () => {
-  adClicked.value = false
   timeLeft.value = props.waitTime
   isProcessing.value = false
   
@@ -184,13 +166,14 @@ const resetModal = () => {
   }
 }
 
-// Watch para resetar quando o modal for fechado
+// Watch para iniciar timer quando modal abrir
 watch(() => props.show, (newValue) => {
   if (!newValue) {
     resetModal()
   } else if (newValue) {
-    // Modal foi aberto - verificar se já teve clique anterior
-    console.log('Modal aberto')
+    // Modal foi aberto - iniciar timer automaticamente
+    console.log('Modal aberto - iniciando timer')
+    startTimer()
   }
 })
 
@@ -331,28 +314,44 @@ onUnmounted(() => {
   width: 100%;
 }
 
-.adsense-notice {
+.ad-info-notice {
   margin-top: 1rem;
   padding: 0.75rem;
-  background: #fff3cd;
-  border-left: 4px solid #ffc107;
+  background: #e8f5e8;
+  border-left: 4px solid #28a745;
   border-radius: 4px;
 }
 
-.notice-text {
+.info-text {
   margin: 0;
-  color: #856404;
+  color: #155724;
   font-size: 0.9rem;
   line-height: 1.4;
 }
 
-.notice-text strong {
-  color: #533f03;
+.info-text strong {
+  color: #0f3b21;
 }
 
-.notice-text small {
-  color: #6c757d;
-  font-style: italic;
+.countdown-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  color: #fd7e14;
+  font-weight: 600;
+  font-size: 1.1rem;
+  transition: color 0.3s ease;
+}
+
+.countdown-message.ready {
+  color: #28a745;
+}
+
+.countdown-icon {
+  font-size: 1.2rem;
+  animation: pulse 1.5s infinite;
 }
 
 .progress-section {

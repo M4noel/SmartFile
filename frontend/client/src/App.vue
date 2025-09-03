@@ -141,13 +141,12 @@
     <!-- Sistema de Gerenciamento de Cookies -->
     <CookieManager />
     
-    <!-- Modal de Clique em Anúncios -->
+    <!-- Modal de Timer para Downloads -->
     <AdClickModal 
       :show="adGate.showModal.value"
       :fileName="adGate.currentFileName.value"
       @close="adGate.cancelModal"
       @download-approved="adGate.approveDownload"
-      @ad-clicked="adGate.handleAdClick"
     />
     
     <Analytics />

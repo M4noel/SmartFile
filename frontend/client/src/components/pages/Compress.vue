@@ -143,20 +143,38 @@ const handleDownload = () => {
   
   // Função que executa o download real
   const executeDownload = () => {
-    const link = document.createElement('a')
-    link.href = result.value.url
-    link.download = fileName
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    console.log('Executando download:', fileName)
     
-    // Mostrar notificação de sucesso
-    if (showNotification) {
-      showNotification.success(
-        'Download Concluído!',
-        'Sua imagem comprimida foi baixada com sucesso.',
-        5000
-      )
+    try {
+      const link = document.createElement('a')
+      link.href = result.value.url
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      console.log('Download iniciado com sucesso')
+      
+      // Mostrar notificação de sucesso após um pequeno delay
+      setTimeout(() => {
+        if (showNotification) {
+          showNotification.success(
+            'Download Iniciado!',
+            `${fileName} está sendo baixado.`,
+            4000
+          )
+        }
+      }, 500)
+      
+    } catch (error) {
+      console.error('Erro no download:', error)
+      if (showNotification) {
+        showNotification.error(
+          'Erro no Download',
+          'Houve um problema ao iniciar o download.',
+          5000
+        )
+      }
     }
   }
   

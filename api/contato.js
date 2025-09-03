@@ -34,14 +34,28 @@ module.exports = async function handler(req, res) {
     const buffer = await parseRequestBody(req);
     const body = buffer.toString();
     
-    // Parse form data (simple key=value format)
-    const formData = {};
-    body.split('&').forEach(pair => {
-      const [key, value] = pair.split('=');
-      if (key && value !== undefined) {
-        formData[decodeURIComponent(key)] = decodeURIComponent(value.replace(/\+/g, ' '));
+    let formData = {};
+    
+    // Detectar o tipo de conteúdo e fazer parse apropriado
+    const contentType = req.headers['content-type'] || '';
+    
+    if (contentType.includes('application/json')) {
+      // Parse JSON
+      try {
+        formData = JSON.parse(body);
+      } catch (e) {
+        console.error('Erro ao fazer parse JSON:', e);
+        return sendJson(res, 400, { success: false, error: 'Dados JSON inválidos' });
       }
-    });
+    } else {
+      // Parse form data (URL encoded)
+      body.split('&').forEach(pair => {
+        const [key, value] = pair.split('=');
+        if (key && value !== undefined) {
+          formData[decodeURIComponent(key)] = decodeURIComponent(value.replace(/\+/g, ' '));
+        }
+      });
+    }
     
     const { nome, email, assunto, mensagem } = formData;
     
@@ -65,15 +79,34 @@ module.exports = async function handler(req, res) {
     const transporter = criarTransporter();
     if (transporter) {
       try {
-        await transporter.sendMail({
+        console.log('Tentando enviar email para:', adminRecipient);
+        const info = await transporter.sendMail({
           from: `"SmartFiles - Contato" <${process.env.SMTP_FROM || process.env.GMAIL_USER || 'no-reply@smartfiles.local'}>`,
           to: adminRecipient,
           subject,
           text
         });
+        console.log('Email enviado com sucesso:', info.messageId);
       } catch (e) {
-        console.error('Erro ao enviar email:', e);
+        console.error('Erro detalhado ao enviar email:', {
+          error: e.message,
+          code: e.code,
+          command: e.command,
+          response: e.response,
+          responseCode: e.responseCode
+        });
+        // Não retornar erro para o usuário, mas registrar o problema
+        console.log('Email não foi enviado, mas formulário será considerado como enviado');
       }
+    } else {
+      console.warn('Transporter não configurado - verifique as variáveis de ambiente de email');
+      console.log('Variáveis disponíveis:', {
+        GMAIL_USER: !!process.env.GMAIL_USER,
+        GMAIL_PASS: !!process.env.GMAIL_PASS,
+        SMTP_HOST: !!process.env.SMTP_HOST,
+        SMTP_USER: !!process.env.SMTP_USER,
+        SMTP_PASS: !!process.env.SMTP_PASS
+      });
     }
     
     return sendJson(res, 200, { success: true });

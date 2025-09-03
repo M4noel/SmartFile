@@ -124,11 +124,17 @@ export default {
       enviando.value = true
       
       try {
-        const response = await axios.post('/api/contato', {
-          nome: form.value.nome,
-          email: form.value.email,
-          assunto: form.value.assunto,
-          mensagem: form.value.mensagem
+        // Criar FormData para envio correto
+        const formData = new URLSearchParams()
+        formData.append('nome', form.value.nome)
+        formData.append('email', form.value.email)
+        formData.append('assunto', form.value.assunto)
+        formData.append('mensagem', form.value.mensagem)
+        
+        const response = await axios.post('/api/contato', formData, {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
         })
         
         if (response.data.success) {

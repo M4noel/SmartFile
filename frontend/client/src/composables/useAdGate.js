@@ -61,8 +61,8 @@ export function useAdGate() {
         showPendingDownloadNotification(pendingDownload.fileName)
         clearPendingDownload()
       } else if (pendingDownload) {
-        // Ainda precisa clicar no anúncio
-        console.log('Download pendente encontrado, mas ainda precisa clicar no anúncio')
+        // Ainda precisa aguardar o timer (NÃO CLIQUE NO ANÚCIO)
+        console.log('Download pendente encontrado - mostrar modal com timer')
         currentFileName.value = pendingDownload.fileName
         showModal.value = true
       }
@@ -249,29 +249,41 @@ export function useAdGate() {
   
   // Aprovar download após timer
   const approveDownload = () => {
-    // Primeiro, aprovar o acesso
+    console.log('Aprovando download...')
+    
+    // Primeiro, aprovar o acesso (liberar por 10 minutos)
     approveAfterTimer()
     
-    if (pendingDownload.value && canDownload()) {
+    // Verificar se há função de download pendente
+    if (pendingDownload.value) {
       const downloadFn = pendingDownload.value
       
       // Fechar modal IMEDIATAMENTE
       showModal.value = false
       
-      console.log('Download aprovado - executando imediatamente')
+      console.log('Executando download imediatamente')
       
       // Executar download imediatamente
-      const result = downloadFn()
-      
-      // Limpar estado após executar
-      pendingDownload.value = null
-      currentFileName.value = ''
-      clearPendingDownload()
-      
-      return result
+      try {
+        const result = downloadFn()
+        console.log('Download executado com sucesso')
+        
+        // Limpar estado após executar
+        pendingDownload.value = null
+        currentFileName.value = ''
+        clearPendingDownload()
+        
+        return result
+      } catch (error) {
+        console.error('Erro ao executar download:', error)
+        return false
+      }
     }
     
-    console.warn('Erro ao aprovar download')
+    // Se não há download pendente, apenas fechar modal
+    console.log('Nenhum download pendente encontrado')
+    showModal.value = false
+    return true
   }
 
   // Cancelar modal

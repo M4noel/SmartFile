@@ -18,10 +18,20 @@
         </div>
 
         <div class="ad-container">
+          <!-- Placeholder para anúncios -->
+          <div class="ad-placeholder" v-if="!adLoaded">
+            <div class="placeholder-content">
+              📱 <strong>Publicidade</strong>
+              <br><small>Aguardando carregamento...</small>
+            </div>
+          </div>
+          
           <AdBanner 
             :ad-client="adClient" 
             :ad-slot="adSlot" 
             class="modal-ad"
+            @ad-loaded="adLoaded = true"
+            @ad-error="adLoaded = false"
           />
           
           <!-- Informação sobre o anúncio -->
@@ -106,6 +116,7 @@ const emit = defineEmits(['close', 'download-approved', 'ad-clicked'])
 // Estados reativo
 const timeLeft = ref(props.waitTime)
 const isProcessing = ref(false)
+const adLoaded = ref(false)
 let countdownInterval = null
 
 // Computed
@@ -312,6 +323,30 @@ onUnmounted(() => {
 
 .modal-ad {
   width: 100%;
+}
+
+.ad-placeholder {
+  width: 100%;
+  min-height: 100px;
+  background: #f8f9fa;
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.placeholder-content {
+  text-align: center;
+  color: #6c757d;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.placeholder-content strong {
+  color: #495057;
+  font-size: 1rem;
 }
 
 .ad-info-notice {

@@ -137,13 +137,17 @@ const compressionRate = computed(() => {
 
 // Função para lidar com o download protegido por anúncios
 const handleDownload = () => {
-  if (!result.value) return
+  if (!result.value) {
+    console.error('Nenhum resultado para download')
+    return
+  }
   
   const fileName = `imagem-comprimida-${Date.now()}.jpg`
+  console.log('Iniciando processo de download para:', fileName)
   
   // Função que executa o download real
   const executeDownload = () => {
-    console.log('Executando download:', fileName)
+    console.log('=== EXECUTANDO DOWNLOAD ===', fileName)
     
     try {
       const link = document.createElement('a')

@@ -141,20 +141,34 @@
     <!-- Sistema de Gerenciamento de Cookies -->
     <CookieManager />
     
+    <!-- Modal de Clique em Anúncios -->
+    <AdClickModal 
+      :show="adGate.showModal.value"
+      :fileName="adGate.currentFileName.value"
+      @close="adGate.cancelModal"
+      @download-approved="adGate.approveDownload"
+      @ad-clicked="adGate.handleAdClick"
+    />
+    
     <Analytics />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, provide } from 'vue';
-import { RouterLink, RouterView } from 'vue-router';
-import AdBanner from '@/components/AdBanner.vue';
-import { Analytics } from '@vercel/analytics/vue';
-import NotificationToast from '@/components/NotificationToast.vue';
-import CookieManager from '@/components/CookieManager.vue';
+import { RouterLink, RouterView } from 'vue-router'
+import AdBanner from '@/components/AdBanner.vue'
+import AdClickModal from '@/components/AdClickModal.vue'
+import { Analytics } from '@vercel/analytics/vue'
+import NotificationToast from '@/components/NotificationToast.vue'
+import CookieManager from '@/components/CookieManager.vue'
+import { useAdGate } from '@/composables/useAdGate'
 
-const mobileMenuOpen = ref(false);
-const notificationToast = ref(null);
+const mobileMenuOpen = ref(false)
+const notificationToast = ref(null)
+
+// Sistema de AdGate global
+const adGate = useAdGate()
 
 // Sistema global de notificações
 const showNotification = {
@@ -181,7 +195,8 @@ const showNotification = {
 };
 
 // Disponibilizar globalmente
-provide('showNotification', showNotification);
+provide('showNotification', showNotification)
+provide('adGate', adGate)
 
 const toggleMobileMenu = () => {
   mobileMenuOpen.value = !mobileMenuOpen.value;
@@ -190,8 +205,9 @@ const toggleMobileMenu = () => {
 // Expor para uso global
 onMounted(() => {
   // Tornar disponível globalmente
-  window.showNotification = showNotification;
-});
+  window.showNotification = showNotification
+  window.adGate = adGate // Para debug
+})
 </script>
 
 <style scoped>

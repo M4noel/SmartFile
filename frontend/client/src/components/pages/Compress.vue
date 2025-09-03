@@ -43,23 +43,33 @@
 
     <div v-if="result" class="result">
       <p>✅ Tamanho final: {{ formatSize(result.size) }} ({{ compressionRate }}% menor)</p>
-      <a :href="result.url" download="imagem-comprimida.jpg" class="download-btn">Baixar</a>
+      <button 
+        @click="handleDownload" 
+        class="download-btn"
+        :disabled="processing"
+      >
+        🚀 Baixar Imagem Comprimida
+      </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import axios from 'axios';
-import FileDrop from '@/components/FileDrop.vue';
-import AdBanner from '@/components/AdBanner.vue';
+import { ref, computed, inject } from 'vue'
+import axios from 'axios'
+import FileDrop from '@/components/FileDrop.vue'
+import AdBanner from '@/components/AdBanner.vue'
 
-const file = ref(null);
-const preview = ref(null);
-const originalSize = ref(0);
-const processing = ref(false);
-const progress = ref(0);
-const result = ref(null);
+const file = ref(null)
+const preview = ref(null)
+const originalSize = ref(0)
+const processing = ref(false)
+const progress = ref(0)
+const result = ref(null)
+
+// Acessar o sistema AdGate global
+const adGate = inject('adGate')
+const showNotification = inject('showNotification')
 
 const handleFile = (uploadedFile) => {
   file.value = uploadedFile;
@@ -70,8 +80,8 @@ const handleFile = (uploadedFile) => {
 };
 
 const compress = async () => {
-  processing.value = true;
-  progress.value = 0;
+  processing.value = true
+  progress.value = 0
   
   // Simulate progress for better UX
   const progressInterval = setInterval(() => {
@@ -122,8 +132,42 @@ const formatSize = (bytes) => {
 const compressionRate = computed(() => {
   return result.value 
     ? Math.round((1 - result.value.size / originalSize.value) * 100)
-    : 0;
-});
+    : 0
+})
+
+// Função para lidar com o download protegido por anúncios
+const handleDownload = () => {
+  if (!result.value) return
+  
+  const fileName = `imagem-comprimida-${Date.now()}.jpg`
+  
+  // Função que executa o download real
+  const executeDownload = () => {
+    const link = document.createElement('a')
+    link.href = result.value.url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    
+    // Mostrar notificação de sucesso
+    if (showNotification) {
+      showNotification.success(
+        'Download Concluído!',
+        'Sua imagem comprimida foi baixada com sucesso.',
+        5000
+      )
+    }
+  }
+  
+  // Usar o sistema AdGate para controlar o download
+  if (adGate) {
+    adGate.requestDownload(fileName, executeDownload)
+  } else {
+    // Fallback se o AdGate não estiver disponível
+    executeDownload()
+  }
+}
 </script>
 
 <style scoped>
@@ -303,18 +347,26 @@ button:disabled {
   display: inline-block;
   margin-top: 1rem;
   padding: 0.85rem 1.75rem;
-  background: linear-gradient(135deg, #2a75ff, #1a65e0);
+  background: linear-gradient(135deg, #28a745, #20c997);
   color: white;
-  text-decoration: none;
+  border: none;
   border-radius: 8px;
+  cursor: pointer;
   transition: all 0.3s;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(42, 117, 255, 0.3);
+  font-size: 1rem;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
 }
 
-.download-btn:hover {
-  background: linear-gradient(135deg, #1a65e0, #0a55d0);
+.download-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #20c997, #17a2b8);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(42, 117, 255, 0.4);
+  box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+}
+
+.download-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 </style>

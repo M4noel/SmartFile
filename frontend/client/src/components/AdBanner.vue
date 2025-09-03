@@ -1,130 +1,157 @@
 <template>
-  <div class="ad-banner" ref="adContainer">
-    <ins class="adsbygoogle"
-         style="display:block;width:100%"
-         :data-ad-client="adClient"
-         :data-ad-slot="adSlot"
-         data-ad-format="auto"
-         data-full-width-responsive="true"></ins>
-    
-    <!-- Overlay invisível para detectar cliques -->
-    <div 
-      class="ad-click-detector" 
-      @click="handleAdAreaClick"
-      v-if="trackClicks"
-    ></div>
+  <div v-if="show" class="ad-modal-overlay" @click="handleOverlayClick">
+    <div class="ad-modal" @click.stop>
+      <div class="ad-modal-header">
+        <h3>🎯 Apoie nosso site!</h3>
+        <button class="close-btn" @click="closeModal" :disabled="isProcessing">×</button>
+      </div>
+      
+      <div class="ad-modal-body">
+        <div class="ad-instruction">
+          <div class="instruction-icon">📢</div>
+          <p class="instruction-text">
+            Para continuar com seu download <strong>{{ fileName }}</strong>, 
+            aguarde o anúncio carregar e o tempo acabar.
+          </p>
+          <p class="support-text">
+            Isso nos ajuda a manter o site gratuito para todos! 🙏
+          </p>
+        </div>
+
+        <div class="ad-container">
+          <AdBanner 
+            :ad-client="adClient" 
+            :ad-slot="adSlot" 
+            @ad-loaded="startCountdown"
+            class="modal-ad"
+          />
+        </div>
+
+        <div class="progress-section" v-if="countdownStarted">
+          <div class="success-message">
+            <span class="success-icon">✅</span>
+            Seu download será liberado em {{ timeLeft }} segundos...
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" :style="{ width: progressWidth + '%' }"></div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button 
+            v-if="!countdownStarted"
+            class="action-btn wait-btn"
+            disabled
+          >
+            ⏳ Aguardando anúncio carregar...
+          </button>
+          
+          <button 
+            v-else-if="timeLeft > 0"
+            class="action-btn countdown-btn"
+            disabled
+          >
+            ⏱️ Aguarde {{ timeLeft }}s...
+          </button>
+          
+          <button 
+            v-else
+            class="action-btn download-btn"
+            @click="proceedWithDownload"
+            :disabled="isProcessing"
+          >
+            <span v-if="isProcessing" class="spinner"></span>
+            {{ isProcessing ? 'Processando...' : '🚀 Liberar Download!' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="ad-modal-footer">
+        <p class="privacy-note">
+          <small>
+            💡 Seu download está seguro e será iniciado automaticamente após a verificação.
+          </small>
+        </p>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref, nextTick } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
+import AdBanner from './AdBanner.vue'
 
 const props = defineProps({
+  show: { type: Boolean, default: false },
+  fileName: { type: String, default: 'arquivo' },
   adClient: { type: String, default: 'ca-pub-5604948783210108' },
   adSlot: { type: String, default: '1098157652' },
-  trackClicks: { type: Boolean, default: false }
+  waitTime: { type: Number, default: 10 } // segundos
 })
 
-const emit = defineEmits(['ad-clicked', 'ad-loaded', 'ad-error'])
+const emit = defineEmits(['close', 'download-approved'])
 
-const adContainer = ref(null)
-let clickDetectionActive = false
-let adLoadTimeout = null
+// Estados reativos
+const countdownStarted = ref(false)
+const timeLeft = ref(props.waitTime)
+const isProcessing = ref(false)
+let countdownInterval = null
 
-const handleAdAreaClick = (event) => {
-  if (!clickDetectionActive) return
-  
-  // Registrar clique no anúncio (SEM MODIFICAR O COMPORTAMENTO DO ADSENSE)
-  console.log('Clique detectado na área do anúncio')
-  
-  emit('ad-clicked', { 
-    timestamp: new Date(),
-    event: event
-  })
-  
-  // Desativar detecção por alguns segundos para evitar múltiplos cliques
-  clickDetectionActive = false
-  setTimeout(() => {
-    clickDetectionActive = true
-  }, 2000)
+// Computed
+const progressWidth = computed(() => {
+  if (!countdownStarted.value) return 0
+  return ((props.waitTime - timeLeft.value) / props.waitTime) * 100
+})
+
+// Métodos
+const startCountdown = () => {
+  if (countdownStarted.value) return
+  countdownStarted.value = true
+  timeLeft.value = props.waitTime
+
+  countdownInterval = setInterval(() => {
+    timeLeft.value--
+    if (timeLeft.value <= 0) {
+      clearInterval(countdownInterval)
+    }
+  }, 1000)
 }
 
-const setupAdClickDetection = () => {
-  if (!props.trackClicks || !adContainer.value) return
+const proceedWithDownload = () => {
+  if (timeLeft.value > 0 || !countdownStarted.value) return
   
-  // Detectar cliques em elementos filhos do anúncio
-  const adElement = adContainer.value.querySelector('.adsbygoogle')
-  if (adElement) {
-    // Usar mutation observer para detectar quando o anúncio é carregado
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-          // Anúncio foi carregado
-          clickDetectionActive = true
-          emit('ad-loaded')
-          observer.disconnect()
-        }
-      })
-    })
-    
-    observer.observe(adElement, {
-      childList: true,
-      subtree: true
-    })
-    
-    // Fallback: ativar detecção após um tempo
-    adLoadTimeout = setTimeout(() => {
-      clickDetectionActive = true
-      observer.disconnect()
-    }, 3000)
+  isProcessing.value = true
+  setTimeout(() => {
+    emit('download-approved')
+    resetModal()
+  }, 1000)
+}
+
+const closeModal = () => {
+  if (isProcessing.value) return
+  emit('close')
+  resetModal()
+}
+
+const handleOverlayClick = () => {
+  if (!isProcessing.value) closeModal()
+}
+
+const resetModal = () => {
+  countdownStarted.value = false
+  timeLeft.value = props.waitTime
+  isProcessing.value = false
+
+  if (countdownInterval) {
+    clearInterval(countdownInterval)
+    countdownInterval = null
   }
 }
 
-onMounted(() => {
-  try {
-    (adsbygoogle = window.adsbygoogle || []).push({})
-    
-    // Configurar detecção de cliques se necessário
-    nextTick(() => {
-      setupAdClickDetection()
-    })
-  } catch (e) {
-    console.error('Erro ao carregar AdSense:', e)
-    emit('ad-error', e)
+// Cleanup
+onUnmounted(() => {
+  if (countdownInterval) {
+    clearInterval(countdownInterval)
   }
 })
 </script>
-
-<style scoped>
-.ad-banner {
-  margin: 1rem auto;
-  text-align: center;
-  position: relative;
-  min-height: 90px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ad-click-detector {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1;
-  cursor: pointer;
-  background: transparent;
-}
-
-/* Fallback para quando o anúncio não carrega */
-.ad-banner:empty::after {
-  content: 'Publicidade';
-  display: block;
-  color: #999;
-  font-size: 0.8rem;
-  padding: 2rem;
-  border: 1px dashed #ccc;
-  border-radius: 4px;
-}
-</style>
